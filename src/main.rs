@@ -1,7 +1,5 @@
+use actix_files::Files;
 use actix_utils::future::{ready, Ready};
-use minijinja_autoreload::AutoReloader;
-use std::{env, path::PathBuf};
-
 use actix_web::{
     dev::{self, ServiceResponse},
     error,
@@ -10,6 +8,8 @@ use actix_web::{
     web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
+use minijinja_autoreload::AutoReloader;
+use std::{env, path::PathBuf};
 
 struct MiniJinjaRenderer {
     tmpl_env: web::Data<minijinja_autoreload::AutoReloader>,
@@ -101,6 +101,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(tmpl_reloader.clone())
             .service(web::resource("/impressum").route(web::get().to(imprint)))
             .service(web::resource("/").route(web::get().to(index)))
+            .service(Files::new("/static", "./static"))
             .wrap(ErrorHandlers::new().handler(StatusCode::NOT_FOUND, not_found))
             .wrap(Logger::default())
     })
