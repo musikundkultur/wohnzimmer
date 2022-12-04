@@ -8,8 +8,35 @@ use actix_web::{
     web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
+use clap::Parser;
 use minijinja_autoreload::AutoReloader;
-use std::{env, path::PathBuf};
+use std::net::SocketAddr;
+use std::path::PathBuf;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// Address on which the web server will listen
+    #[arg(
+        long,
+        value_name = "HOST:PORT",
+        env = "LISTEN_ADDR",
+        default_value = "127.0.0.1:8080"
+    )]
+    listen_addr: SocketAddr,
+
+    /// Automatically reload templates when they are modified
+    #[arg(long, env = "TEMPLATE_AUTORELOAD")]
+    template_autoreload: bool,
+
+    /// Path to the template directory
+    #[arg(long, value_name = "DIR", default_value = "templates")]
+    template_dir: PathBuf,
+
+    /// Path to the static directory
+    #[arg(long, value_name = "DIR", default_value = "static")]
+    static_dir: PathBuf,
+}
 
 struct MiniJinjaRenderer {
     tmpl_env: web::Data<minijinja_autoreload::AutoReloader>,
@@ -65,10 +92,9 @@ async fn imprint(tmpl_env: MiniJinjaRenderer) -> actix_web::Result<impl Responde
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    // If TEMPLATE_AUTORELOAD is set, then the path tracking is enabled.
-    let enable_template_autoreload = env::var("TEMPLATE_AUTORELOAD").as_deref() == Ok("true");
+    let cli = Cli::parse();
 
-    if enable_template_autoreload {
+    if cli.template_autoreload {
         log::info!("template auto-reloading is enabled");
     } else {
         log::info!(
@@ -80,33 +106,31 @@ async fn main() -> std::io::Result<()> {
     let tmpl_reloader = AutoReloader::new(move |notifier| {
         let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
 
-        let tmpl_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates");
-
         // if watch_path is never called, no fs watcher is created
-        if enable_template_autoreload {
-            notifier.watch_path(&tmpl_path, true);
+        if cli.template_autoreload {
+            notifier.watch_path(&cli.template_dir, true);
         }
 
-        env.set_source(minijinja::Source::from_path(tmpl_path));
+        env.set_source(minijinja::Source::from_path(&cli.template_dir));
 
         Ok(env)
     });
 
     let tmpl_reloader = web::Data::new(tmpl_reloader);
 
-    log::info!("starting HTTP server at http://localhost:8080");
+    log::info!("starting HTTP server at {}", cli.listen_addr);
 
     HttpServer::new(move || {
         App::new()
             .app_data(tmpl_reloader.clone())
             .service(web::resource("/impressum").route(web::get().to(imprint)))
             .service(web::resource("/").route(web::get().to(index)))
-            .service(Files::new("/static", "./static"))
+            .service(Files::new("/static", &cli.static_dir))
             .wrap(ErrorHandlers::new().handler(StatusCode::NOT_FOUND, not_found))
             .wrap(Logger::default())
     })
     .workers(2)
-    .bind(("127.0.0.1", 8080))?
+    .bind(cli.listen_addr)?
     .run()
     .await
 }
