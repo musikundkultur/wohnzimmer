@@ -1,0 +1,14 @@
+[package]
+name = "wohnzimmer"
+version = "0.1.0"
+authors = ["Alhambra Luckenwalde <github@alhambra-luckenwalde.de>"]
+license = "MIT OR Apache-2.0"
+description = "A vector-based map and set implementation"
+repository = "https://github.com/musikundkultur/wohnzimmer"
+readme = "README.md"
+edition = "2021"
+exclude = [
+    ".github/",
+]
+
+[dependencies]
