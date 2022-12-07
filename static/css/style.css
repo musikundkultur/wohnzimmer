@@ -1,0 +1,293 @@
+/*---------------------*/
+/* FONTS
+/*---------------------*/
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/lato/lato-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/lato/lato-bold-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/lato/lato-regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/lato/lato-bold.woff2") format("woff2");
+}
+
+/*---------------------*/
+/* GLOBAL
+/*---------------------*/
+body {
+  background-color: #c21e1d;
+  color: #ffffff;
+  font-family: Lato, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5em;
+  text-align: center;
+}
+
+a {
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.container {
+  margin: auto;
+  width: 960px;
+}
+
+/*---------------------*/
+/* HEADER
+/*---------------------*/
+.header {
+  background-color: #c21e1d;
+  text-align: left;
+}
+
+.header h1 {
+  margin-bottom: 10px;
+  margin-top: 0px;
+  padding-top: 5px;
+  position: relative;
+}
+
+.header h1:before,
+.header h1:after {
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: "";
+  display: block;
+  height: 141px;
+  position: absolute;
+  top: 0;
+  width: 137px;
+}
+
+.header h1:before {
+  background-image: url("/static/images/head-left.png");
+  left: 0;
+}
+
+.header h1:after {
+  background-image: url("/static/images/head-right.png");
+  right: 0;
+}
+
+.header h1 a {
+  background-image: url("/static/images/alhambra.png");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: block;
+  height: 100px;
+  margin: 0 auto;
+  overflow: hidden;
+  text-indent: -999px;
+  width: 550px;
+}
+
+.header h2 {
+  background-image: url("/static/images/musikundkultur.png");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: block;
+  height: 40px;
+  margin: 0 auto;
+  overflow: hidden;
+  text-indent: -999px;
+  width: 669px;
+}
+
+/*---------------------*/
+/* CONTENT
+/*---------------------*/
+.content {
+  margin-top: 55px;
+  margin-bottom: 30px;
+}
+
+.content .doors {
+  position: relative;
+}
+
+.content .doors:before {
+  background-image: url("/static/images/illuminated-advertising.jpg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: "";
+  display: block;
+  height: 38px;
+  margin: 0 auto;
+  width: 257px;
+}
+
+.content .doors a {
+  background-image: url("/static/images/doors-closed.jpg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: block;
+  height: 180px;
+  margin: 0 auto;
+  overflow: hidden;
+  text-indent: -999px;
+  width: 136px;
+}
+
+.content .doors a:hover {
+  background-image: url("/static/images/doors-open.jpg");
+}
+
+.content .events {
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0;
+  text-align: center;
+  width: 360px;
+}
+
+.content .events table {
+  width: 100%;
+}
+
+.content .events th,
+.content .events td {
+  padding: 2px;
+}
+
+.content .events th {
+  text-align: left;
+}
+
+.content .events td {
+  text-align: right;
+}
+
+.content .email {
+  left: -1px;
+  position: relative;
+}
+
+/*---------------------*/
+/* FOOTER
+/*---------------------*/
+.footer {
+  padding: 5px 10px;
+  text-align: center;
+}
+
+.footer ul {
+  list-style: none;
+  padding: 0;
+  margin: auto;
+}
+
+.footer ul li {
+  display: inline-block;
+  margin: 0 15px;
+}
+
+/*---------------------*/
+/* BOXED PAGE STYLE
+/*---------------------*/
+body.boxed {
+  background-color: #a87;
+  color: #000000;
+}
+
+body.boxed .container {
+  -webkit-box-shadow: 0 0 15px rgb(0 0 0);
+  -moz-box-shadow: 0 0 15px rgb(0, 0, 0);
+  box-shadow: 0 0 15px rgb(0 0 0);
+  background-color: #000000;
+}
+
+body.boxed .content {
+  background-color: #f0e8d1;
+  margin-top: 35px;
+  margin-bottom: 0px;
+  padding: 20px 30px;
+  position: relative;
+  text-align: left;
+}
+
+body.boxed .content a {
+  color: #660000;
+}
+
+body.boxed .footer {
+  text-align: right;
+}
+
+/*---------------------*/
+/* ERROR PAGE STYLE
+/*---------------------*/
+body.error .header h1:before,
+body.error .header h1:after,
+body.error .header h2 {
+  display: none;
+}
+
+/*---------------------*/
+/* MEDIA QUERIES
+/*---------------------*/
+@media only screen and (max-width: 959px) {
+  .container {
+    width: 760px;
+  }
+
+  .header h1:before,
+  .header h1:after {
+    width: 120px;
+    height: 125px;
+  }
+
+  .header h2 {
+    width: 500px;
+    height: 28px;
+  }
+}
+
+@media only screen and (max-width: 767px) {
+  .container {
+    width: auto;
+  }
+
+  .header h1:before,
+  .header h1:after,
+  .header h2 {
+    display: none;
+  }
+
+  .header h1 a {
+    width: 280px;
+    height: 50px;
+  }
+}

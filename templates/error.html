@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ error }} | {{ super() }}{% endblock %}
+{% block body_class %}error{% endblock %}
+{% block title %}{{ reason }} | {{ super() }}{% endblock %}
 
-{% block body %}
-  <h1>{{ status_code }} {{ error }}</h1>
+{% block content %}
+  <h1>{{ reason }}</h1>
 {% endblock %}

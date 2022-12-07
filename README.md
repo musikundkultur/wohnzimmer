@@ -10,3 +10,5 @@
 
 The source code of wohnzimmer is licensed under either of [Apache License,
 Version 2.0](LICENSE-APACHE.md) or [MIT license](LICENSE-MIT) at your option.
+
+The Lato font is licensed under the [Open Font License](static/fonts/lato/OFL.txt).

@@ -4,8 +4,8 @@ use actix_web::{
     dev::{self, ServiceResponse},
     error,
     http::{header::ContentType, StatusCode},
-    middleware::{ErrorHandlerResponse, ErrorHandlers, Logger},
-    web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+    middleware::{Compress, ErrorHandlerResponse, ErrorHandlers, Logger},
+    route, web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
 use clap::Parser;
@@ -39,15 +39,11 @@ struct Cli {
 }
 
 struct MiniJinjaRenderer {
-    tmpl_env: web::Data<minijinja_autoreload::AutoReloader>,
+    tmpl_env: web::Data<AutoReloader>,
 }
 
 impl MiniJinjaRenderer {
-    fn render(
-        &self,
-        tmpl: &str,
-        ctx: impl Into<minijinja::value::Value>,
-    ) -> actix_web::Result<Html> {
+    fn render(&self, tmpl: &str, ctx: impl Into<minijinja::value::Value>) -> Result<Html> {
         self.tmpl_env
             .acquire_env()
             .map_err(|_| error::ErrorInternalServerError("could not acquire template env"))?
@@ -67,7 +63,7 @@ impl FromRequest for MiniJinjaRenderer {
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _pl: &mut dev::Payload) -> Self::Future {
-        let tmpl_env = <web::Data<minijinja_autoreload::AutoReloader>>::extract(req)
+        let tmpl_env = <web::Data<AutoReloader>>::extract(req)
             .into_inner()
             .unwrap();
 
@@ -75,16 +71,13 @@ impl FromRequest for MiniJinjaRenderer {
     }
 }
 
-async fn index(tmpl_env: MiniJinjaRenderer) -> actix_web::Result<impl Responder> {
-    tmpl_env.render(
-        "index.html",
-        minijinja::context! {
-            text => "Welcome!",
-        },
-    )
+#[route("/", method = "GET", method = "HEAD")]
+async fn index(tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
+    tmpl_env.render("index.html", ())
 }
 
-async fn imprint(tmpl_env: MiniJinjaRenderer) -> actix_web::Result<impl Responder> {
+#[route("/impressum", method = "GET", method = "HEAD")]
+async fn imprint(tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
     tmpl_env.render("imprint.html", ())
 }
 
@@ -123,11 +116,18 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(tmpl_reloader.clone())
-            .service(web::resource("/impressum").route(web::get().to(imprint)))
-            .service(web::resource("/").route(web::get().to(index)))
+            .service(imprint)
+            .service(index)
             .service(Files::new("/static", &cli.static_dir))
-            .wrap(ErrorHandlers::new().handler(StatusCode::NOT_FOUND, not_found))
-            .wrap(Logger::default())
+            .wrap(
+                ErrorHandlers::new()
+                    .handler(StatusCode::NOT_FOUND, not_found)
+                    .handler(StatusCode::INTERNAL_SERVER_ERROR, internal_server_error),
+            )
+            .wrap(Compress::default())
+            // Don't log things that could identify the user, e.g. omit client IP, referrer and
+            // user agent.
+            .wrap(Logger::new(r#""%r" %s %b %T"#))
     })
     .workers(2)
     .bind(cli.listen_addr)?
@@ -137,40 +137,48 @@ async fn main() -> std::io::Result<()> {
 
 /// Error handler for a 404 Page not found error.
 fn not_found<B>(svc_res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
-    let res = get_error_response(&svc_res, "Page not found");
+    error_handler(svc_res, "not_found.html")
+}
 
-    Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
-        svc_res.into_parts().0,
-        res.map_into_right_body(),
-    )))
+/// Error handler for a 500 Internal server error.
+fn internal_server_error<B>(svc_res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
+    error_handler(svc_res, "error.html")
 }
 
 /// Generic error handler.
-fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> HttpResponse {
-    let req = res.request();
+fn error_handler<B>(svc_res: ServiceResponse<B>, tmpl: &str) -> Result<ErrorHandlerResponse<B>> {
+    let req = svc_res.request();
 
+    let reason = svc_res
+        .status()
+        .canonical_reason()
+        .unwrap_or("Unknown error");
     let tmpl_env = MiniJinjaRenderer::extract(req).into_inner().unwrap();
 
     // Provide a fallback to a simple plain text response in case an error occurs during the
     // rendering of the error page.
     let fallback = |err: &str| {
-        HttpResponse::build(res.status())
+        HttpResponse::build(svc_res.status())
             .content_type(ContentType::plaintext())
             .body(err.to_string())
     };
 
     let ctx = minijinja::context! {
-        error => error,
-        status_code => res.status().as_str(),
+        status_code => svc_res.status().as_str(),
+        reason => reason,
     };
 
-    match tmpl_env.render("error.html", ctx) {
+    let res = match tmpl_env.render(tmpl, ctx) {
         Ok(body) => body
             .customize()
-            .with_status(res.status())
+            .with_status(svc_res.status())
             .respond_to(req)
             .map_into_boxed_body(),
+        Err(_) => fallback(reason),
+    };
 
-        Err(_) => fallback(error),
-    }
+    Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
+        svc_res.into_parts().0,
+        res.map_into_right_body(),
+    )))
 }

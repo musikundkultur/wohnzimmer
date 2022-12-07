@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block body_class %}error{% endblock %}
+{% block title %}Seite nicht gefunden | {{ super() }}{% endblock %}
+
+{% block content %}
+  <h1>Seite nicht gefunden</h1>
+  <p>
+    Diese Seite wurde entweder gelöscht oder hat nie existiert.
+  </p>
+  <p>
+    Vielleicht findest du ja bei einem der untenstehenden Links was du suchst.
+  </p>
+{% endblock %}
