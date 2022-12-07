@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.0...v0.1.1) (2022-12-07)
+
+
+### Bug Fixes
+
+* **seo:** add meta description ([79ac003](https://github.com/musikundkultur/wohnzimmer/commit/79ac003871c4fac553048532876dcf5f0f277af1))
+
+
+### Miscellaneous
+
+* **deps:** bump actions/cache from 3.0.8 to 3.0.11 ([#1](https://github.com/musikundkultur/wohnzimmer/issues/1)) ([26778e9](https://github.com/musikundkultur/wohnzimmer/commit/26778e9b48f975439cba69a91ef6d8088479c60c))
+
 ## 0.1.0 (2022-12-07)
 
 
