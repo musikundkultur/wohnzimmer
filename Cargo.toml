@@ -1,6 +1,7 @@
 [package]
 name = "wohnzimmer"
 version = "0.1.0"
+publish = false
 authors = ["Alhambra Luckenwalde <github@alhambra-luckenwalde.de>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/musikundkultur/wohnzimmer"
