@@ -7,32 +7,16 @@
     <a href="https://www.facebook.com/musikundkultur" title="Alhambra Luckenwalde auf Facebook">Reinspaziert</a>
   </div>
   <div class="events">
-    <h3>Termine 2022</h3>
-    <table summary="Termine 2022">
+    {% for year, events in events_by_year | items %}
+    <h3>Termine {{ year }}</h3>
+    <table summary="Termine {{ year }}">
+      {% for event in events %}
       <tr>
-        <th>28. Oktober</th>
-        <td>Halloween-Party</td>
+        <th>{{ event.date }}</th>
+        <td>{{ event.title }}</td>
       </tr>
-      <tr>
-        <th>4. November</th>
-        <td>Geschlossene Gesellschaft</td>
-      </tr>
-      <tr>
-        <th>18. November</th>
-        <td>Kneipenquiz</td>
-      </tr>
-      <tr>
-        <th>2. Dezember</th>
-        <td>Vorverkaufsparty Weihnachtskonzert</td>
-      </tr>
-      <tr>
-        <th>9. Dezember</th>
-        <td>Lesung</td>
-      </tr>
-      <tr>
-        <th>25. Dezember</th>
-        <td>Weihnachtskonzert</td>
-      </tr>
+      {% endfor %}
     </table>
+    {% endfor %}
   </div>
 {% endblock %}

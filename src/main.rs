@@ -1,3 +1,6 @@
+mod calendar;
+
+use self::calendar::Events;
 use actix_files::Files;
 use actix_utils::future::{ready, Ready};
 use actix_web::{
@@ -5,9 +8,12 @@ use actix_web::{
     error,
     http::{header::ContentType, StatusCode},
     middleware::{Compress, ErrorHandlerResponse, ErrorHandlers, Logger},
-    route, web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+    route,
+    web::Data,
+    App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
+use chrono::{Local, Months};
 use clap::Parser;
 use minijinja_autoreload::AutoReloader;
 use std::net::SocketAddr;
@@ -36,10 +42,14 @@ struct Cli {
     /// Path to the static directory
     #[arg(long, value_name = "DIR", default_value = "static")]
     static_dir: PathBuf,
+
+    /// Path to the event config file
+    #[arg(long, value_name = "FILE")]
+    event_config_file: Option<PathBuf>,
 }
 
 struct MiniJinjaRenderer {
-    tmpl_env: web::Data<AutoReloader>,
+    tmpl_env: Data<AutoReloader>,
 }
 
 impl MiniJinjaRenderer {
@@ -63,17 +73,19 @@ impl FromRequest for MiniJinjaRenderer {
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _pl: &mut dev::Payload) -> Self::Future {
-        let tmpl_env = <web::Data<AutoReloader>>::extract(req)
-            .into_inner()
-            .unwrap();
+        let tmpl_env = <Data<AutoReloader>>::extract(req).into_inner().unwrap();
 
         ready(Ok(Self { tmpl_env }))
     }
 }
 
 #[route("/", method = "GET", method = "HEAD")]
-async fn index(tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
-    tmpl_env.render("index.html", ())
+async fn index(tmpl_env: MiniJinjaRenderer, events: Data<Events>) -> Result<impl Responder> {
+    let now = Local::now().date_naive();
+    let one_month_ago = now.checked_sub_months(Months::new(1)).unwrap();
+    let in_six_months = now.checked_add_months(Months::new(6)).unwrap();
+    let events_by_year = events.between(&one_month_ago, &in_six_months).by_year();
+    tmpl_env.render("index.html", minijinja::context! { events_by_year })
 }
 
 #[route("/impressum", method = "GET", method = "HEAD")]
@@ -86,6 +98,14 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let cli = Cli::parse();
+
+    let events = match &cli.event_config_file {
+        Some(config_file) => {
+            log::info!("loading calendar events from {}", config_file.display());
+            Events::from_path(config_file)?
+        }
+        None => Events::default(),
+    };
 
     if cli.template_autoreload {
         log::info!("template auto-reloading is enabled");
@@ -109,12 +129,14 @@ async fn main() -> std::io::Result<()> {
         Ok(env)
     });
 
-    let tmpl_reloader = web::Data::new(tmpl_reloader);
+    let tmpl_reloader = Data::new(tmpl_reloader);
+    let events = Data::new(events);
 
     log::info!("starting HTTP server at {}", cli.listen_addr);
 
     HttpServer::new(move || {
         App::new()
+            .app_data(events.clone())
             .app_data(tmpl_reloader.clone())
             .service(imprint)
             .service(index)
