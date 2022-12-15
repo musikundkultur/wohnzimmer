@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.1...v0.1.2) (2022-12-15)
+
+
+### Miscellaneous
+
+* **build:** use `cargo-chef` to enable caching in docker builds ([#4](https://github.com/musikundkultur/wohnzimmer/issues/4)) ([ba60754](https://github.com/musikundkultur/wohnzimmer/commit/ba607541c6a70e62595a654bb4a5609559b95953))
+* **release:** build and push docker image ([#7](https://github.com/musikundkultur/wohnzimmer/issues/7)) ([96ebb30](https://github.com/musikundkultur/wohnzimmer/commit/96ebb30ec2e973c4343eebc64c69f43317042645))
+
 ## [0.1.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.0...v0.1.1) (2022-12-07)
 
 
