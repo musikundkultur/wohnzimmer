@@ -21,9 +21,9 @@ RUN cargo build --release
 ## Package
 FROM debian:bullseye-slim
 COPY --from=builder /app/target/release/wohnzimmer /usr/local/bin/wohnzimmer
+COPY config/ config/
 COPY static/ static/
 COPY templates/ templates/
 USER nobody
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/wohnzimmer"]
-CMD ["--listen-addr", "0.0.0.0:8080"]

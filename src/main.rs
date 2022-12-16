@@ -8,35 +8,9 @@ use actix_web::{
     route, web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
-use clap::Parser;
+use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
-use std::net::SocketAddr;
-use std::path::PathBuf;
-
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    /// Address on which the web server will listen
-    #[arg(
-        long,
-        value_name = "HOST:PORT",
-        env = "LISTEN_ADDR",
-        default_value = "127.0.0.1:8080"
-    )]
-    listen_addr: SocketAddr,
-
-    /// Automatically reload templates when they are modified
-    #[arg(long, env = "TEMPLATE_AUTORELOAD")]
-    template_autoreload: bool,
-
-    /// Path to the template directory
-    #[arg(long, value_name = "DIR", default_value = "templates")]
-    template_dir: PathBuf,
-
-    /// Path to the static directory
-    #[arg(long, value_name = "DIR", default_value = "static")]
-    static_dir: PathBuf,
-}
+use wohnzimmer::AppConfig;
 
 struct MiniJinjaRenderer {
     tmpl_env: web::Data<AutoReloader>,
@@ -82,43 +56,45 @@ async fn imprint(tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let cli = Cli::parse();
+    let config = AppConfig::load()?;
 
-    if cli.template_autoreload {
+    if config.server.template_autoreload {
         log::info!("template auto-reloading is enabled");
     } else {
-        log::info!(
-            "template auto-reloading is disabled; run with TEMPLATE_AUTORELOAD=true to enable"
-        );
+        log::info!("template auto-reloading is disabled");
     }
+
+    let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
+    env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
+    env.add_global("config", Value::from_serializable(&config));
 
     // The closure is invoked every time the environment is outdated to recreate it.
     let tmpl_reloader = AutoReloader::new(move |notifier| {
-        let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
+        let mut env = env.clone();
 
         // if watch_path is never called, no fs watcher is created
-        if cli.template_autoreload {
-            notifier.watch_path(&cli.template_dir, true);
+        if config.server.template_autoreload {
+            notifier.watch_path("./templates", true);
         }
 
-        env.set_source(minijinja::Source::from_path(&cli.template_dir));
+        env.set_source(minijinja::Source::from_path("./templates"));
 
         Ok(env)
     });
 
     let tmpl_reloader = web::Data::new(tmpl_reloader);
 
-    log::info!("starting HTTP server at {}", cli.listen_addr);
+    log::info!("starting HTTP server at {}", config.server.listen_addr);
 
     HttpServer::new(move || {
         App::new()
             .app_data(tmpl_reloader.clone())
             .service(imprint)
             .service(index)
-            .service(Files::new("/static", &cli.static_dir))
+            .service(Files::new("/static", "./static"))
             .wrap(
                 ErrorHandlers::new()
                     .handler(StatusCode::NOT_FOUND, not_found)
@@ -130,9 +106,11 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::new(r#""%r" %s %b %T"#))
     })
     .workers(2)
-    .bind(cli.listen_addr)?
+    .bind(config.server.listen_addr)?
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }
 
 /// Error handler for a 404 Page not found error.
