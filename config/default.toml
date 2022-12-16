@@ -1,0 +1,20 @@
+[server]
+listen_addr = "127.0.0.1:8080"
+template_autoreload = false
+
+[site]
+title = "Alhambra Luckenwalde"
+tagline = "Musik- und Kulturförderverein e.V."
+description = "Der Musik- und Kulturförderverein e.V. veranstaltet und unterstützt kulturelle Projekte in Luckenwalde und Umgebung, und betreibt im ehemaligen Alhambra Kino am Markt eine Bar."
+
+[[site.links]]
+title = "Instagram"
+href = "https://www.instagram.com/alhambra_luckenwalde"
+
+[[site.links]]
+title = "Facebook"
+href = "https://www.facebook.com/musikundkultur"
+
+[[site.links]]
+title = "Impressum"
+href = "/impressum"

@@ -8,6 +8,33 @@ This repository contains the source code for the website of the Musik- und
 Kulturförderverein e.V. at [musikundkultur.de](https://musikundkultur.de) /
 [alhambra-luckenwalde.de](https://alhambra-luckenwalde.de).
 
+## Configuration
+
+Configuration is loaded from multiple places in the following order:
+
+1. The file `config/default.toml` is always loaded.
+
+2. If present, the environment specific file `config/{environment}.toml` is
+   loaded based on the value of the `APP_ENV` environment variable, which
+   defaults to `development`.
+
+3. If present, the file `config/local.toml` can be created to override certain
+   configuration values locally (it's on `.gitignore`).
+
+4. Finally, environment variables (with optional `WZ_` prefix) can be set to
+   override any configuration value. E.g. the config `server.listen_addr` can
+   be set via either of these environment variables: `SERVER__LISTEN_ADDR` /
+   `WZ_SERVER__LISTEN_ADDR`.
+
+   **Note**: A double-underscore (`__`) is used as path separator for nested
+   configuration attributes.
+
+### Logging configuration
+
+The log level can be configured via the `RUST_LOG` environment variable.
+Examples can be found in then [`env_logger`
+documentation](https://docs.rs/env_logger/latest/env_logger/).
+
 ## Release process
 
 This project uses
