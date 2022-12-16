@@ -5,15 +5,21 @@ use actix_web::{
     error,
     http::{header::ContentType, StatusCode},
     middleware::{Compress, ErrorHandlerResponse, ErrorHandlers, Logger},
-    route, web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+    route,
+    web::Data,
+    App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
+use chrono::{Months, Utc};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
-use wohnzimmer::AppConfig;
+use wohnzimmer::{
+    calendar::{Calendar, EventSourceKind, EventsByYear, StaticEventSource},
+    AppConfig,
+};
 
 struct MiniJinjaRenderer {
-    tmpl_env: web::Data<AutoReloader>,
+    tmpl_env: Data<AutoReloader>,
 }
 
 impl MiniJinjaRenderer {
@@ -37,17 +43,29 @@ impl FromRequest for MiniJinjaRenderer {
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _pl: &mut dev::Payload) -> Self::Future {
-        let tmpl_env = <web::Data<AutoReloader>>::extract(req)
-            .into_inner()
-            .unwrap();
+        let tmpl_env = <Data<AutoReloader>>::extract(req).into_inner().unwrap();
 
         ready(Ok(Self { tmpl_env }))
     }
 }
 
 #[route("/", method = "GET", method = "HEAD")]
-async fn index(tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
-    tmpl_env.render("index.html", ())
+async fn index(tmpl_env: MiniJinjaRenderer, calendar: Data<Calendar>) -> Result<impl Responder> {
+    let now = Utc::now();
+    let one_month_ago = now - Months::new(1);
+    let in_six_months = now + Months::new(6);
+
+    let events_by_year = calendar
+        .get_events_by_year(one_month_ago..in_six_months)
+        .await
+        .map_err(|err| {
+            // Handle this error gracefully by just displaying no events instead of sending a 500
+            // response.
+            log::error!("failed to fetch calendar events: {}", err);
+            EventsByYear::default()
+        });
+
+    tmpl_env.render("index.html", minijinja::context! { events_by_year })
 }
 
 #[route("/impressum", method = "GET", method = "HEAD")]
@@ -60,6 +78,17 @@ async fn main() -> anyhow::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let config = AppConfig::load()?;
+
+    let calendar = match &config.calendar.event_source {
+        EventSourceKind::Static => {
+            Calendar::new(StaticEventSource::new(config.calendar.events.clone()))
+        }
+        EventSourceKind::GoogleCalendar => {
+            // @TODO(mohmann): we need to create a `GoogleCalendarEventSource` implementation.
+            log::warn!("Google Calendar support is not implemented yet, falling back to static events from config");
+            Calendar::new(StaticEventSource::new(config.calendar.events.clone()))
+        }
+    };
 
     if config.server.template_autoreload {
         log::info!("template auto-reloading is enabled");
@@ -85,12 +114,14 @@ async fn main() -> anyhow::Result<()> {
         Ok(env)
     });
 
-    let tmpl_reloader = web::Data::new(tmpl_reloader);
+    let calendar = Data::new(calendar);
+    let tmpl_reloader = Data::new(tmpl_reloader);
 
     log::info!("starting HTTP server at {}", config.server.listen_addr);
 
     HttpServer::new(move || {
         App::new()
+            .app_data(calendar.clone())
             .app_data(tmpl_reloader.clone())
             .service(imprint)
             .service(index)
