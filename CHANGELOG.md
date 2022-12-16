@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.2...v0.1.3) (2022-12-16)
+
+
+### Bug Fixes
+
+* **meta:** correct team reference in `CODEOWNERS` ([#8](https://github.com/musikundkultur/wohnzimmer/issues/8)) ([db3e8ac](https://github.com/musikundkultur/wohnzimmer/commit/db3e8ac80293e839d3fd24f639cf18fb0e2f4615))
+
+
+### Miscellaneous
+
+* **docs:** document release process ([471cc4e](https://github.com/musikundkultur/wohnzimmer/commit/471cc4edab464babfb1cd25acc95fa8ff09e86d7))
+
 ## [0.1.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.1...v0.1.2) (2022-12-15)
 
 
