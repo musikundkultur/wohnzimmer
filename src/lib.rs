@@ -48,6 +48,8 @@ pub struct SiteConfig {
     pub tagline: String,
     /// Optional site description. This is used in the description meta tag.
     pub description: Option<String>,
+    /// Optional canonical URL of the site. This is used in the canonical meta tag.
+    pub canonical_url: Option<String>,
     /// Links to display in the site footer.
     #[serde(default)]
     pub links: Vec<Link>,

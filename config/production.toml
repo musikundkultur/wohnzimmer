@@ -1,2 +1,5 @@
 [server]
 listen_addr = "0.0.0.0:8080"
+
+[site]
+canonical_url = "https://alhambra-luckenwalde.de"

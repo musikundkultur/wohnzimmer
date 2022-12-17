@@ -50,7 +50,11 @@ impl FromRequest for MiniJinjaRenderer {
 }
 
 #[route("/", method = "GET", method = "HEAD")]
-async fn index(tmpl_env: MiniJinjaRenderer, calendar: Data<Calendar>) -> Result<impl Responder> {
+async fn index(
+    req: HttpRequest,
+    tmpl_env: MiniJinjaRenderer,
+    calendar: Data<Calendar>,
+) -> Result<impl Responder> {
     let now = Utc::now();
     let one_month_ago = now - Months::new(1);
     let in_six_months = now + Months::new(6);
@@ -68,12 +72,18 @@ async fn index(tmpl_env: MiniJinjaRenderer, calendar: Data<Calendar>) -> Result<
         }
     };
 
-    tmpl_env.render("index.html", minijinja::context! { events_by_year })
+    tmpl_env.render(
+        "index.html",
+        minijinja::context! { request_path => req.uri().path(), events_by_year },
+    )
 }
 
 #[route("/impressum", method = "GET", method = "HEAD")]
-async fn imprint(tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
-    tmpl_env.render("imprint.html", ())
+async fn imprint(req: HttpRequest, tmpl_env: MiniJinjaRenderer) -> Result<impl Responder> {
+    tmpl_env.render(
+        "imprint.html",
+        minijinja::context! { request_path => req.uri().path() },
+    )
 }
 
 #[actix_web::main]
@@ -176,6 +186,7 @@ fn error_handler<B>(svc_res: ServiceResponse<B>, tmpl: &str) -> Result<ErrorHand
     };
 
     let ctx = minijinja::context! {
+        request_path => req.uri().path(),
         status_code => svc_res.status().as_str(),
         reason => reason,
     };

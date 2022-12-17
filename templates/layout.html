@@ -16,6 +16,9 @@
 {%- if config.site.description %}
   <meta name="description" content="{{ config.site.description }}">
 {%- endif %}
+{%- if config.site.canonical_url and request_path %}
+  <link rel="canonical" href="{{ config.site.canonical_url }}{{ request_path }}">
+{%- endif %}
   <meta charset="utf-8" />
   <title>{% block title %}{{ config.site.title }} | {{ config.site.tagline }}{% endblock %}</title>
 </head>
