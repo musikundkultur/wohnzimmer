@@ -17,10 +17,17 @@ actix-web = "4"
 actix-web-lab = "0.18"
 actix-utils = "3"
 anyhow = "1.0.66"
+async-trait = "0.1.59"
 config = { version = "0.13.3", default-features = false, features = ["toml"] }
+chrono = { version = "0.4.23", features = ["serde", "unstable-locales"] }
+chrono-tz = "0.8.1"
 env_logger = "0.9"
+indexmap = { version = "1.9.2", features = ["serde"] }
 log = "0.4"
 minijinja = { version = "0.24", features = ["source"] }
 minijinja-autoreload = "0.24"
 serde = { version = "1.0.150", features = ["derive"] }
 thiserror = "1.0.37"
+
+[dev-dependencies]
+actix-rt = "2.7.0"

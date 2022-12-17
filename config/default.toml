@@ -18,3 +18,18 @@ href = "https://www.facebook.com/musikundkultur"
 [[site.links]]
 title = "Impressum"
 href = "/impressum"
+
+[calendar]
+# This can also be set to `google-calendar` in the production config once
+# support for it is implemented.
+event_source = "static"
+
+# List of events used by the `static` event source.
+events = [
+    { date = "2022-10-28T19:00:00+01:00", title = "Halloween-Party" },
+    { date = "2022-11-04T19:00:00+01:00", title = "Geschlossene Gesellschaft" },
+    { date = "2022-11-18T19:00:00+01:00", title = "Kneipenquiz" },
+    { date = "2022-12-02T19:00:00+01:00", title = "Vorverkaufsparty Weihnachtskonzert" },
+    { date = "2022-12-09T19:00:00+01:00", title = "Lesung" },
+    { date = "2022-12-25T19:00:00+01:00", title = "Weihnachtskonzert" }
+]

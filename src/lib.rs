@@ -5,6 +5,8 @@ use std::io;
 use std::net::SocketAddr;
 use thiserror::Error;
 
+pub mod calendar;
+
 /// Result type used throughout this crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -27,6 +29,16 @@ pub struct Link {
     pub href: String,
 }
 
+/// Calendar configuration.
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CalendarConfig {
+    /// Source for calendar events.
+    pub event_source: calendar::EventSourceKind,
+    /// Mapping of event date to event title.
+    #[serde(default)]
+    pub events: Vec<calendar::Event>,
+}
+
 /// Website specific configuration.
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct SiteConfig {
@@ -37,6 +49,7 @@ pub struct SiteConfig {
     /// Optional site description. This is used in the description meta tag.
     pub description: Option<String>,
     /// Links to display in the site footer.
+    #[serde(default)]
     pub links: Vec<Link>,
 }
 
@@ -52,10 +65,12 @@ pub struct ServerConfig {
 /// Global application configuration.
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct AppConfig {
-    /// Server configuration values.
+    /// Server configuration section.
     pub server: ServerConfig,
-    /// Website configuration values.
+    /// Website configuration section.
     pub site: SiteConfig,
+    /// Calendar configuration section.
+    pub calendar: CalendarConfig,
 }
 
 impl AppConfig {
