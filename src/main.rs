@@ -55,15 +55,18 @@ async fn index(tmpl_env: MiniJinjaRenderer, calendar: Data<Calendar>) -> Result<
     let one_month_ago = now - Months::new(1);
     let in_six_months = now + Months::new(6);
 
-    let events_by_year = calendar
+    let events_by_year = match calendar
         .get_events_by_year(one_month_ago..in_six_months)
         .await
-        .map_err(|err| {
+    {
+        Ok(events_by_year) => events_by_year,
+        Err(err) => {
             // Handle this error gracefully by just displaying no events instead of sending a 500
             // response.
             log::error!("failed to fetch calendar events: {}", err);
             EventsByYear::default()
-        });
+        }
+    };
 
     tmpl_env.render("index.html", minijinja::context! { events_by_year })
 }
