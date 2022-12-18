@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.3...v0.2.0) (2022-12-18)
+
+
+### Features
+
+* add hierarchical application config ([#10](https://github.com/musikundkultur/wohnzimmer/issues/10)) ([5fa8652](https://github.com/musikundkultur/wohnzimmer/commit/5fa865217a5caff89e2514eba41c839edd68b42d))
+* **calendar:** add `EventSource` abstraction ([#12](https://github.com/musikundkultur/wohnzimmer/issues/12)) ([6b4540e](https://github.com/musikundkultur/wohnzimmer/commit/6b4540ee1e69def10dd1261040ed9be407507e2e))
+
+
+### Bug Fixes
+
+* replace incorrect `.map_err()` with `match` ([dcb71ea](https://github.com/musikundkultur/wohnzimmer/commit/dcb71ea8f32ef4e9d095e1c4c175abe1758044e4))
+
+
+### Miscellaneous
+
+* add support for canonical `link` tag ([#13](https://github.com/musikundkultur/wohnzimmer/issues/13)) ([61f261c](https://github.com/musikundkultur/wohnzimmer/commit/61f261c081c7c9d757428fc47a64243176df1601))
+* add support for canonical `link` tag ([#13](https://github.com/musikundkultur/wohnzimmer/issues/13)) ([2823048](https://github.com/musikundkultur/wohnzimmer/commit/28230485009b0266cb9f5c9d0497400b141e4de6))
+
 ## [0.1.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.2...v0.1.3) (2022-12-16)
 
 
