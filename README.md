@@ -76,6 +76,13 @@ for arbitrary branches and tags via workflow dispatch.
 This will start a deployment for the commit referenced by the tag or the
 branches' `HEAD` without creating a new GitHub release.
 
+Alternatively, the application can be built and deployed from a local machine
+via [`flyctl`](https://github.com/superfly/flyctl):
+
+```sh
+flyctl deploy
+```
+
 ## License
 
 The source code of wohnzimmer is licensed under either of [Apache License,
