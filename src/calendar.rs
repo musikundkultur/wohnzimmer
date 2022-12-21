@@ -75,11 +75,11 @@ impl EventSource for StaticEventSource {
 }
 
 #[derive(Debug)]
-pub struct GoogleCalendarSource {
+pub struct GoogleCalendarEventSource {
     client: google_calendar::Client,
 }
 
-impl GoogleCalendarSource {
+impl GoogleCalendarEventSource {
     pub async fn new() -> Self {
         Self {
             client: google_calendar::Client::new().await.unwrap(),
@@ -102,7 +102,7 @@ impl TryFrom<&google_calendar::models::Event> for Event {
 }
 
 #[async_trait]
-impl EventSource for GoogleCalendarSource {
+impl EventSource for GoogleCalendarEventSource {
     async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
         let events = self.client.get_events(Some(range), None, None).await?;
         let mut calendar_events: Vec<Event> = Vec::new();
