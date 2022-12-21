@@ -1,6 +1,5 @@
-mod models;
+pub mod models;
 use reqwest::header;
-use std::error::Error;
 use std::ops::Range;
 
 use chrono::{DateTime, SecondsFormat, Utc};
@@ -15,6 +14,24 @@ pub struct Client {
     calendar_id: String,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ClientError {
+    #[error("Authentication error: {0}")]
+    GCloudAuthError(#[from] google_cloud_auth::error::Error),
+
+    #[error("RequestError: {0}")]
+    RequestError(#[from] reqwest::Error),
+
+    #[error("InvalidHeaderError: {0}")]
+    RequestInvalidHedaer(#[from] reqwest::header::InvalidHeaderValue),
+
+    #[error("MissingCalendarIDError: {0}")]
+    MissingCalendarIDError(#[from] std::env::VarError),
+
+    #[error("JsonParsingError: {0}")]
+    JsonParsingError(#[from] serde_json::Error),
+}
+
 impl Client {
     /// Create a new google calendar client it will fetch the service host credentials from the
     /// environment either via the GOOGLE_APPLICATION_CREDENTIALS variable pointing to the json
@@ -22,7 +39,7 @@ impl Client {
     /// GOOGLE_APPLICATION_CREDENTIALS_JSON variable containing the content of said json file
     /// encoded as base64. It will further fetch the id of the calendar that it will query from
     /// the GOOGLE_CALENDAR_ID environment variable.
-    pub async fn new() -> Result<Self, Box<dyn Error>> {
+    pub async fn new() -> Result<Self, ClientError> {
         // We only need readonly acccess
         let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
 
@@ -71,7 +88,7 @@ impl Client {
         date_range: Option<DateRange>,
         event_count: Option<u32>,
         next_page_token: Option<String>,
-    ) -> Result<(Vec<models::Event>, Option<String>), Box<dyn Error>> {
+    ) -> Result<(Vec<models::Event>, Option<String>), ClientError> {
         let events_request = self.client.get(format!(
             "https://www.googleapis.com/calendar/v3/calendars/{}/events",
             self.calendar_id

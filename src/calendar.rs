@@ -1,3 +1,5 @@
+use crate::google_calendar;
+
 use super::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Datelike, Locale, Utc};
@@ -69,6 +71,46 @@ impl EventSource for StaticEventSource {
             .collect();
 
         Ok(events)
+    }
+}
+
+#[derive(Debug)]
+pub struct GoogleCalendarSource {
+    client: google_calendar::Client,
+}
+
+impl GoogleCalendarSource {
+    pub async fn new() -> Self {
+        Self {
+            client: google_calendar::Client::new().await.unwrap(),
+        }
+    }
+}
+
+impl TryFrom<&google_calendar::models::Event> for Event {
+    type Error = chrono::ParseError;
+
+    fn try_from(ev: &google_calendar::models::Event) -> Result<Self, Self::Error> {
+        Ok(Event {
+            date: DateTime::from_utc(
+                DateTime::parse_from_rfc3339(ev.start.date_time.as_str())?.naive_utc(),
+                Utc,
+            ),
+            title: ev.summary.clone(),
+        })
+    }
+}
+
+#[async_trait]
+impl EventSource for GoogleCalendarSource {
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        let events = self.client.get_events(Some(range), None, None).await?;
+        let mut calendar_events: Vec<Event> = Vec::new();
+        for event in events.0.iter() {
+            let event = Event::try_from(event)?;
+            calendar_events.push(event);
+        }
+        Ok(calendar_events)
     }
 }
 
