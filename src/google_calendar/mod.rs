@@ -5,8 +5,10 @@ use std::ops::Range;
 
 use chrono::{DateTime, SecondsFormat, Utc};
 
+/// Represents a timeframe with a start and end time
 pub type DateRange = Range<DateTime<Utc>>;
 
+/// Google calendar client for making requests to the google calendar api
 #[derive(Debug)]
 pub struct Client {
     client: reqwest::Client,

@@ -6,6 +6,7 @@ use std::net::SocketAddr;
 use thiserror::Error;
 
 pub mod calendar;
+mod google_calendar;
 
 /// Result type used throughout this crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
