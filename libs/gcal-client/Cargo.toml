@@ -1,0 +1,14 @@
+[package]
+name = "gcal-client"
+version = "0.1.0"
+authors = ["Philipp Engel <philipp.engel.1990@googlemail.com>"]
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+serde = "1"
+serde_json = "1"
+google-cloud-auth = "0.6.1"
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4.23", features = ["serde", "unstable-locales"] }

@@ -31,3 +31,6 @@ thiserror = "1.0.38"
 
 [dev-dependencies]
 actix-rt = "2.7.0"
+
+[dependencies.gcal-client]
+path = "libs/gcal-client"
