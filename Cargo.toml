@@ -19,7 +19,7 @@ actix-utils = "3"
 anyhow = "1.0.66"
 async-trait = "0.1.59"
 config = { version = "0.13.3", default-features = false, features = ["toml"] }
-chrono = { version = "0.4.23", features = ["serde", "unstable-locales"] }
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "serde", "std", "unstable-locales"] }
 chrono-tz = "0.8.1"
 env_logger = "0.9"
 indexmap = { version = "1.9.2", features = ["serde"] }
