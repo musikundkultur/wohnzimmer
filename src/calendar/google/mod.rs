@@ -1,9 +1,10 @@
 pub mod models;
+use indexmap::IndexMap;
 use reqwest::header;
 use std::ops::Range;
 
 use chrono::{DateTime, SecondsFormat, Utc};
-use reqwest::{header::InvalidHeaderValue, Client, Request, Response};
+use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use task_local_extensions::Extensions;
 use tokio::sync::Mutex;
@@ -119,7 +120,7 @@ impl GoogleCalendarClient {
     /// GOOGLE_APPLICATION_CREDENTIALS_JSON variable containing the content of said json file
     /// encoded as base64. It will further fetch the id of the calendar that it will query from
     /// the GOOGLE_CALENDAR_ID environment variable.
-    pub fn new() -> Result<Self, ClientError> {
+    pub fn new(calendar_id: Option<String>) -> Result<Self, ClientError> {
         // We only need readonly acccess
 
         let mut headers = header::HeaderMap::new();
@@ -142,7 +143,10 @@ impl GoogleCalendarClient {
             client: ClientBuilder::new(reqwest_client)
                 .with(AuthMiddleware::new())
                 .build(),
-            calendar_id: std::env::var("GOOGLE_CALENDAR_ID")?,
+            calendar_id: match calendar_id {
+                Some(id) => id,
+                None => std::env::var("GOOGLE_CALENDAR_ID")?,
+            },
         })
     }
 
@@ -170,10 +174,9 @@ impl GoogleCalendarClient {
             ))
             .send()
             .await?
-            .text()
+            .json::<models::Events>()
             .await?;
 
-        let events: models::Events = serde_json::from_str(&events)?;
         Ok((events.items, events.next_page_token))
     }
 }
@@ -182,32 +185,33 @@ fn build_query_parameters(
     date_range: &Option<DateRange>,
     event_count: &Option<u32>,
     next_page_token: &Option<String>,
-) -> Vec<(&'static str, String)> {
+) -> IndexMap<&'static str, String> {
     // Google requires rfc3339 format for the times with a fixed offset
     // see: https://developers.google.com/calendar/api/v3/reference/events/list
 
-    let mut query_parameters: Vec<(&'static str, String)> = vec![
+    let mut query_parameters: IndexMap<&'static str, String> = IndexMap::from([
         // filter out reoccuring events
         ("singleEvents", "true".to_owned()),
         // order ascending by start time
         ("orderBy", "startTime".to_owned()),
-    ];
+    ]);
 
     if let Some(range) = date_range {
         let start_date = range.start.to_rfc3339_opts(SecondsFormat::Secs, true);
         let end_date = range.end.to_rfc3339_opts(SecondsFormat::Secs, true);
         // limit the events by a time frame
-        query_parameters.append(&mut vec![("timeMin", start_date), ("timeMax", end_date)]);
+        query_parameters.insert("timeMin", start_date);
+        query_parameters.insert("timeMax", end_date);
     }
 
     if let Some(count) = event_count {
         // limit the number of events to a specific count
-        query_parameters.push(("maxResults", count.to_string()));
+        query_parameters.insert("maxResults", count.to_string());
     }
 
     if let Some(token) = next_page_token {
         // page token returned by previous request to fetch the next page
-        query_parameters.push(("pageToken", token.clone()));
+        query_parameters.insert("pageToken", token.clone());
     }
 
     query_parameters
@@ -223,10 +227,10 @@ mod tests {
     fn build_query_parameters_without_parameters() {
         let query_parameters = build_query_parameters(&None, &None, &None);
 
-        let expected_parameters: Vec<(&str, String)> = vec![
+        let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
             ("orderBy", "startTime".to_owned()),
-        ];
+        ]);
 
         assert_eq!(expected_parameters, query_parameters);
     }
@@ -247,7 +251,7 @@ mod tests {
 
         let query_parameters = build_query_parameters(&Some(date_range), &None, &None);
 
-        let expected_parameters: Vec<(&str, String)> = vec![
+        let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
             ("orderBy", "startTime".to_owned()),
             (
@@ -258,7 +262,7 @@ mod tests {
                 "timeMax",
                 end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
             ),
-        ];
+        ]);
 
         assert_eq!(expected_parameters, query_parameters);
     }
@@ -280,7 +284,7 @@ mod tests {
 
         let query_parameters = build_query_parameters(&Some(date_range), &Some(30), &None);
 
-        let expected_parameters: Vec<(&str, String)> = vec![
+        let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
             ("orderBy", "startTime".to_owned()),
             (
@@ -292,7 +296,7 @@ mod tests {
                 end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
             ),
             ("maxResults", "30".to_owned()),
-        ];
+        ]);
 
         assert_eq!(expected_parameters, query_parameters);
     }
@@ -315,7 +319,7 @@ mod tests {
         let query_parameters =
             build_query_parameters(&Some(date_range), &None, &Some("abcd".to_owned()));
 
-        let expected_parameters: Vec<(&str, String)> = vec![
+        let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
             ("orderBy", "startTime".to_owned()),
             (
@@ -327,7 +331,7 @@ mod tests {
                 end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
             ),
             ("pageToken", "abcd".to_owned()),
-        ];
+        ]);
 
         assert_eq!(expected_parameters, query_parameters);
     }
@@ -350,7 +354,7 @@ mod tests {
         let query_parameters =
             build_query_parameters(&Some(date_range), &Some(30), &Some("abcd".to_owned()));
 
-        let expected_parameters: Vec<(&str, String)> = vec![
+        let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
             ("orderBy", "startTime".to_owned()),
             (
@@ -363,7 +367,7 @@ mod tests {
             ),
             ("maxResults", "30".to_owned()),
             ("pageToken", "abcd".to_owned()),
-        ];
+        ]);
 
         assert_eq!(expected_parameters, query_parameters);
     }

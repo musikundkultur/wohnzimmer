@@ -6,7 +6,6 @@ use std::net::SocketAddr;
 use thiserror::Error;
 
 pub mod calendar;
-mod google_calendar;
 
 /// Result type used throughout this crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -20,7 +19,7 @@ pub enum Error {
     #[error("config error: {0}")]
     Config(#[from] config::ConfigError),
     #[error("Client error: {0}")]
-    Client(#[from] google_calendar::ClientError),
+    GoogleCalendar(#[from] calendar::google::ClientError),
 }
 
 /// A link configuration.

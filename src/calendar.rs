@@ -1,8 +1,9 @@
-use crate::google_calendar;
+pub mod google;
 
 use super::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Datelike, Locale, Utc};
+use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
@@ -76,19 +77,19 @@ impl EventSource for StaticEventSource {
 
 #[derive(Debug)]
 pub struct GoogleCalendarEventSource {
-    client: google_calendar::GoogleCalendarClient,
+    client: GoogleCalendarClient,
 }
 
 impl GoogleCalendarEventSource {
     pub async fn new() -> Result<Self> {
         Ok(Self {
-            client: google_calendar::GoogleCalendarClient::new()?,
+            client: GoogleCalendarClient::new(None)?,
         })
     }
 }
 
-impl From<google_calendar::models::Event> for Event {
-    fn from(ev: google_calendar::models::Event) -> Self {
+impl From<google::models::Event> for Event {
+    fn from(ev: google::models::Event) -> Self {
         Self {
             date: ev.start.date_time,
             title: ev.summary,
