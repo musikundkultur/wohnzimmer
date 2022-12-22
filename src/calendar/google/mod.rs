@@ -21,26 +21,29 @@ pub struct GoogleCalendarClient {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
+    /// Errpr while authenticating with google
     #[error("Authentication error: {0}")]
     GCloudAuthError(#[from] google_cloud_auth::error::Error),
 
+    /// Error while making a http request
     #[error("RequestError: {0}")]
     RequestError(#[from] reqwest::Error),
 
+    /// Error while executing some middleware code
     #[error("RequestMiddlewareError: {0}")]
     RequestMiddlewareError(#[from] reqwest_middleware::Error),
 
+    /// Error while building http headers
     #[error("InvalidHeaderError: {0}")]
     RequestInvalidHedaer(#[from] reqwest::header::InvalidHeaderValue),
 
+    /// No calendar id is found in env when it is not passed into client constructor
     #[error("MissingCalendarIDError: {0}")]
     MissingCalendarIDError(#[from] std::env::VarError),
 
+    /// Error while parsing responses
     #[error("JsonParsingError: {0}")]
     JsonParsingError(#[from] serde_json::Error),
-
-    #[error("SynchronisationError")]
-    SynchronisationError,
 }
 
 struct AuthMiddleware {
@@ -49,9 +52,6 @@ struct AuthMiddleware {
 
 impl AuthMiddleware {
     fn new() -> Self {
-        // This internally looks up the service account credentials that come from json key file
-        // generated in the google cloud console. The lookup happens via the
-        // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
         Self {
             token: Mutex::new(None),
         }
@@ -64,11 +64,14 @@ impl AuthMiddleware {
 
     async fn refresh_token(&self) -> Result<(), ClientError> {
         let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
-
         let config = google_cloud_auth::Config {
             audience: None,
             scopes: Some(&scopes),
         };
+
+        // This internally looks up the service account credentials that come from json key file
+        // generated in the google cloud console. The lookup happens via the
+        // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
         let ts = google_cloud_auth::create_token_source(config).await?;
         let mut token = self.token.lock().await;
         *token = Some(ts.token().await?);
