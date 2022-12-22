@@ -76,13 +76,13 @@ impl EventSource for StaticEventSource {
 
 #[derive(Debug)]
 pub struct GoogleCalendarEventSource {
-    client: google_calendar::Client,
+    client: google_calendar::GoogleCalendarClient,
 }
 
 impl GoogleCalendarEventSource {
     pub async fn new() -> Result<Self> {
         Ok(Self {
-            client: google_calendar::Client::new().await?,
+            client: google_calendar::GoogleCalendarClient::new()?,
         })
     }
 }

@@ -3,14 +3,18 @@ use reqwest::header;
 use std::ops::Range;
 
 use chrono::{DateTime, SecondsFormat, Utc};
+use reqwest::{header::InvalidHeaderValue, Client, Request, Response};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
+use task_local_extensions::Extensions;
+use tokio::sync::Mutex;
 
 /// Represents a timeframe with a start and end time
 pub type DateRange = Range<DateTime<Utc>>;
 
 /// Google calendar client for making requests to the google calendar api
 #[derive(Debug)]
-pub struct Client {
-    client: reqwest::Client,
+pub struct GoogleCalendarClient {
+    client: ClientWithMiddleware,
     calendar_id: String,
 }
 
@@ -22,6 +26,9 @@ pub enum ClientError {
     #[error("RequestError: {0}")]
     RequestError(#[from] reqwest::Error),
 
+    #[error("RequestMiddlewareError: {0}")]
+    RequestMiddlewareError(#[from] reqwest_middleware::Error),
+
     #[error("InvalidHeaderError: {0}")]
     RequestInvalidHedaer(#[from] reqwest::header::InvalidHeaderValue),
 
@@ -30,35 +37,92 @@ pub enum ClientError {
 
     #[error("JsonParsingError: {0}")]
     JsonParsingError(#[from] serde_json::Error),
+
+    #[error("SynchronisationError")]
+    SynchronisationError,
 }
 
-impl Client {
-    /// Create a new google calendar client it will fetch the service host credentials from the
-    /// environment either via the GOOGLE_APPLICATION_CREDENTIALS variable pointing to the json
-    /// key file generated in the google cloud console for the account or via a the
-    /// GOOGLE_APPLICATION_CREDENTIALS_JSON variable containing the content of said json file
-    /// encoded as base64. It will further fetch the id of the calendar that it will query from
-    /// the GOOGLE_CALENDAR_ID environment variable.
-    pub async fn new() -> Result<Self, ClientError> {
-        // We only need readonly acccess
+struct AuthMiddleware {
+    token: Mutex<Option<google_cloud_auth::token::Token>>,
+}
+
+impl AuthMiddleware {
+    fn new() -> Self {
+        // This internally looks up the service account credentials that come from json key file
+        // generated in the google cloud console. The lookup happens via the
+        // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
+        Self {
+            token: Mutex::new(None),
+        }
+    }
+
+    async fn has_valid_token(&self) -> bool {
+        let token = self.token.lock().await;
+        return token.is_some() && token.as_ref().unwrap().valid();
+    }
+
+    async fn refresh_token(&self) -> Result<(), ClientError> {
         let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
 
         let config = google_cloud_auth::Config {
             audience: None,
             scopes: Some(&scopes),
         };
-
-        // This internally looks up the service account credentials that come from json key file
-        // generated in the google cloud console. The lookup happens via the
-        // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
         let ts = google_cloud_auth::create_token_source(config).await?;
-        let token = ts.token().await?;
+        let mut token = self.token.lock().await;
+        *token = Some(ts.token().await?);
+        Ok(())
+    }
+}
+
+impl From<ClientError> for reqwest_middleware::Error {
+    fn from(err: ClientError) -> Self {
+        reqwest_middleware::Error::Middleware(anyhow::Error::new(err))
+    }
+}
+
+#[async_trait::async_trait]
+impl Middleware for AuthMiddleware {
+    async fn handle(
+        &self,
+        req: Request,
+        extensions: &mut Extensions,
+        next: Next<'_>,
+    ) -> reqwest_middleware::Result<Response> {
+        if !self.has_valid_token().await {
+            match self.refresh_token().await {
+                Ok(_) => (),
+                Err(e) => return Err(reqwest_middleware::Error::from(e)),
+            };
+        }
+        // should be safe to call unwrap here if refresh_token() fails the error is caught above so
+        // we should always have a valid token here
+        let token = self.token.lock().await;
+        let access_token = &token.as_ref().unwrap().access_token;
+
+        // insert auth header
+        let mut req = req;
+        req.headers_mut().insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(format!("Bearer {}", access_token).as_str())
+                .map_err(|err| ClientError::from(err))?,
+        );
+
+        next.run(req, extensions).await
+    }
+}
+
+impl GoogleCalendarClient {
+    /// Create a new google calendar client it will fetch the service host credentials from the
+    /// environment either via the GOOGLE_APPLICATION_CREDENTIALS variable pointing to the json
+    /// key file generated in the google cloud console for the account or via a the
+    /// GOOGLE_APPLICATION_CREDENTIALS_JSON variable containing the content of said json file
+    /// encoded as base64. It will further fetch the id of the calendar that it will query from
+    /// the GOOGLE_CALENDAR_ID environment variable.
+    pub fn new() -> Result<Self, ClientError> {
+        // We only need readonly acccess
 
         let mut headers = header::HeaderMap::new();
-        headers.insert(
-            header::AUTHORIZATION,
-            header::HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str())?,
-        );
         headers.insert(
             header::ACCEPT_ENCODING,
             header::HeaderValue::from_str("gzip")?,
@@ -70,10 +134,14 @@ impl Client {
             )?,
         );
 
+        let reqwest_client = reqwest::Client::builder()
+            .default_headers(headers)
+            .build()?;
+
         Ok(Self {
-            client: reqwest::Client::builder()
-                .default_headers(headers)
-                .build()?,
+            client: ClientBuilder::new(reqwest_client)
+                .with(AuthMiddleware::new())
+                .build(),
             calendar_id: std::env::var("GOOGLE_CALENDAR_ID")?,
         })
     }
