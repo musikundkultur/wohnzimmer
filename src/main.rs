@@ -10,13 +10,11 @@ use actix_web::{
     App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use actix_web_lab::respond::Html;
-use chrono::{Months, Utc};
+use chrono::{Duration, DurationRound, Months, Utc};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
 use wohnzimmer::{
-    calendar::{
-        Calendar, EventSourceKind, EventsByYear, GoogleCalendarEventSource, StaticEventSource,
-    },
+    calendar::{Calendar, EventsByYear},
     AppConfig,
 };
 
@@ -57,7 +55,10 @@ async fn index(
     tmpl_env: MiniJinjaRenderer,
     calendar: Data<Calendar>,
 ) -> Result<impl Responder> {
-    let now = Utc::now();
+    // We truncate the time from the date. This makes caching easier and is generally more what we
+    // want since we're calculating with full days anyways. The unwrap here cannot fail.
+    let now = Utc::now().duration_trunc(Duration::days(1)).unwrap();
+
     let one_month_ago = now - Months::new(1);
     let in_six_months = now + Months::new(6);
 
@@ -91,16 +92,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = AppConfig::load()?;
 
-    let calendar = match &config.calendar.event_source {
-        EventSourceKind::Static => {
-            Calendar::new(StaticEventSource::new(config.calendar.events.clone()))
-        }
-        EventSourceKind::GoogleCalendar => {
-            // @TODO(mohmann): we need to create a `GoogleCalendarEventSource` implementation.
-            log::warn!("Google Calendar support is not implemented yet, falling back to static events from config");
-            Calendar::new(GoogleCalendarEventSource::new()?)
-        }
-    };
+    let calendar = Calendar::from_config(&config.calendar)?;
 
     if config.server.template_autoreload {
         log::info!("template auto-reloading is enabled");

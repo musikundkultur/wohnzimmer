@@ -52,3 +52,7 @@ events = [
     { date = "2023-04-28T18:00:00+01:00", title = "Kneipenquiz" },
     { date = "2023-04-29T18:00:00+01:00", title = "Geschlossene Gesellschaft" },
 ]
+
+[calendar.cache]
+enabled = false
+ttl_seconds = 60
