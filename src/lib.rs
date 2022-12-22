@@ -37,6 +37,19 @@ pub struct CalendarConfig {
     /// Mapping of event date to event title.
     #[serde(default)]
     pub events: Vec<calendar::Event>,
+    /// Calendar cache configuration section.
+    pub cache: CalendarCacheConfig,
+}
+
+/// Calendar cache configuration.
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CalendarCacheConfig {
+    /// If `true`, calendar events will be cached.
+    pub enabled: bool,
+    /// Cache TTL in seconds before re-fetching calendar events from the source.
+    pub ttl_seconds: Option<u64>,
+    /// Maximum number of entries the LRU cache can hold before it starts to evict.
+    pub size: Option<usize>,
 }
 
 /// Website specific configuration.

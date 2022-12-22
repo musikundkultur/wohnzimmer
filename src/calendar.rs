@@ -1,9 +1,12 @@
 use super::Result;
+use crate::{CalendarCacheConfig, CalendarConfig};
 use async_trait::async_trait;
+use cached::{CachedAsync, TimedSizedCache};
 use chrono::{DateTime, Datelike, Locale, Utc};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
+use tokio::sync::Mutex;
 
 /// Type alias for a date represented in UTC.
 pub type UtcDate = DateTime<Utc>;
@@ -72,9 +75,73 @@ impl EventSource for StaticEventSource {
     }
 }
 
+pub struct CachingEventSource<T> {
+    cache: Mutex<TimedSizedCache<Range<UtcDate>, Vec<Event>>>,
+    inner: T,
+}
+
+impl<T> CachingEventSource<T> {
+    /// Creates a new `CachingEventSource` from an inner `T`, a cache size and a cache entry TTL in
+    /// seconds.
+    pub fn new(inner: T, size: usize, ttl_seconds: u64) -> CachingEventSource<T> {
+        CachingEventSource {
+            cache: Mutex::new(TimedSizedCache::with_size_and_lifespan(
+                size.max(1), // Cache size has to be at least 1.
+                ttl_seconds,
+            )),
+            inner,
+        }
+    }
+
+    /// Creates a new `CachingEventSource` from an inner `T` and a cache configuration.
+    pub fn from_config(inner: T, config: &CalendarCacheConfig) -> CachingEventSource<T> {
+        let size = config.size.unwrap_or(100).max(1);
+        let ttl_seconds = config.ttl_seconds.unwrap_or(10);
+
+        log::info!("creating event cache with cache size {size} and TTL of {ttl_seconds}s");
+
+        CachingEventSource::new(inner, size, ttl_seconds)
+    }
+}
+
+#[async_trait]
+impl<T> EventSource for CachingEventSource<T>
+where
+    T: EventSource,
+{
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        self.cache
+            .lock()
+            .await
+            .try_get_or_set_with(range.clone(), || self.inner.get_events(range))
+            .await
+            .cloned()
+    }
+}
+
+#[async_trait]
+impl<T> EventSource for &T
+where
+    T: EventSource + ?Sized,
+{
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        (*self).get_events(range).await
+    }
+}
+
+#[async_trait]
+impl<T> EventSource for Box<T>
+where
+    T: EventSource + ?Sized,
+{
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        (**self).get_events(range).await
+    }
+}
+
 /// The `Calendar` type wraps an event source with additional functionality.
 pub struct Calendar {
-    event_source: Box<dyn EventSource + 'static>,
+    event_source: Box<dyn EventSource>,
 }
 
 impl Calendar {
@@ -85,6 +152,24 @@ impl Calendar {
     {
         Calendar {
             event_source: Box::new(event_source),
+        }
+    }
+
+    /// Creates a new `Calendar` from configuration.
+    pub fn from_config(config: &CalendarConfig) -> Calendar {
+        let event_source = match config.event_source {
+            EventSourceKind::Static => Box::new(StaticEventSource::new(config.events.clone())),
+            EventSourceKind::GoogleCalendar => {
+                // @TODO(mohmann): we need to create a `GoogleCalendarEventSource` implementation.
+                log::warn!("Google Calendar support is not implemented yet, falling back to static events from config");
+                Box::new(StaticEventSource::new(config.events.clone()))
+            }
+        };
+
+        if config.cache.enabled {
+            Calendar::new(CachingEventSource::from_config(event_source, &config.cache))
+        } else {
+            Calendar::new(event_source)
         }
     }
 
@@ -128,6 +213,7 @@ mod tests {
     use super::*;
     use chrono::TimeZone;
     use indexmap::indexmap;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     macro_rules! date {
         ($y:expr, $m:expr, $d:expr) => {
@@ -203,5 +289,56 @@ mod tests {
                 .unwrap(),
             expected
         );
+    }
+
+    #[actix_rt::test]
+    async fn caching_event_source() {
+        // A fake `EventSource` which just counts invocations of `get_events` and returns a fake
+        // event.
+        struct Counter(AtomicUsize);
+
+        #[async_trait]
+        impl EventSource for Counter {
+            async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+                self.0.fetch_add(1, Ordering::SeqCst);
+                Ok(vec![Event {
+                    title: "event".into(),
+                    date: range.start.clone(),
+                }])
+            }
+        }
+
+        let counter = Counter(AtomicUsize::new(0));
+
+        let es = CachingEventSource::new(&counter, 10, 1);
+        let range1 = date!(2022, 1, 1)..date!(2022, 1, 2);
+        let range2 = date!(2022, 1, 2)..date!(2022, 1, 3);
+
+        assert_eq!(
+            es.get_events(range1.clone()).await.unwrap(),
+            vec![event!("event", 2022, 1, 1)]
+        );
+
+        assert_eq!(
+            es.get_events(range2.clone()).await.unwrap(),
+            vec![event!("event", 2022, 1, 2)]
+        );
+
+        // This call is cached.
+        assert_eq!(
+            es.get_events(range1.clone()).await.unwrap(),
+            vec![event!("event", 2022, 1, 1)]
+        );
+
+        assert_eq!(counter.0.load(Ordering::Relaxed), 2);
+
+        // Let the cache expire.
+        tokio::time::sleep(tokio::time::Duration::new(1, 0)).await;
+
+        // These calls are not cached, because the cache expired.
+        es.get_events(range2).await.unwrap();
+        es.get_events(range1).await.unwrap();
+
+        assert_eq!(counter.0.load(Ordering::Relaxed), 4);
     }
 }

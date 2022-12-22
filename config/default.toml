@@ -33,3 +33,8 @@ events = [
     { date = "2022-12-09T19:00:00+01:00", title = "Lesung" },
     { date = "2022-12-25T19:00:00+01:00", title = "Weihnachtskonzert" }
 ]
+
+[calendar.cache]
+enabled = false
+size = 100
+ttl_seconds = 3600
