@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.0...v0.2.1) (2022-12-22)
+
+
+### Bug Fixes
+
+* **security:** remove dependency on vulnerable version of time package ([3e083f3](https://github.com/musikundkultur/wohnzimmer/commit/3e083f35e78138e48b41ef297e93cd8189d3aad2))
+
+
+### Miscellaneous
+
+* **docs:** add paragraph about deployment from local machine ([f3662fc](https://github.com/musikundkultur/wohnzimmer/commit/f3662fcf12a7fae2741cb25cfb40ae8a1caac098))
+
 ## [0.2.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.1.3...v0.2.0) (2022-12-18)
 
 
