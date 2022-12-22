@@ -80,37 +80,33 @@ pub struct GoogleCalendarEventSource {
 }
 
 impl GoogleCalendarEventSource {
-    pub async fn new() -> Self {
-        Self {
-            client: google_calendar::Client::new().await.unwrap(),
-        }
+    pub async fn new() -> Result<Self> {
+        Ok(Self {
+            client: google_calendar::Client::new().await?,
+        })
     }
 }
 
-impl TryFrom<&google_calendar::models::Event> for Event {
-    type Error = chrono::ParseError;
-
-    fn try_from(ev: &google_calendar::models::Event) -> Result<Self, Self::Error> {
-        Ok(Event {
-            date: DateTime::from_utc(
-                DateTime::parse_from_rfc3339(ev.start.date_time.as_str())?.naive_utc(),
-                Utc,
-            ),
-            title: ev.summary.clone(),
-        })
+impl From<google_calendar::models::Event> for Event {
+    fn from(ev: google_calendar::models::Event) -> Self {
+        Self {
+            date: ev.start.date_time,
+            title: ev.summary,
+        }
     }
 }
 
 #[async_trait]
 impl EventSource for GoogleCalendarEventSource {
     async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        let events = self.client.get_events(Some(range), None, None).await?;
-        let mut calendar_events: Vec<Event> = Vec::new();
-        for event in events.0.iter() {
-            let event = Event::try_from(event)?;
-            calendar_events.push(event);
-        }
-        Ok(calendar_events)
+        Ok(self
+            .client
+            .get_events(Some(range), None, None)
+            .await?
+            .0
+            .into_iter()
+            .map(Event::from)
+            .collect())
     }
 }
 

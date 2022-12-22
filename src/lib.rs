@@ -19,12 +19,8 @@ pub enum Error {
     Io(#[from] io::Error),
     #[error("config error: {0}")]
     Config(#[from] config::ConfigError),
-
     #[error("Client error: {0}")]
     Client(#[from] google_calendar::ClientError),
-
-    #[error("DateTime parsing error: {0}")]
-    DateTimeParsingError(#[from] chrono::ParseError),
 }
 
 /// A link configuration.

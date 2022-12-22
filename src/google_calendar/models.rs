@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -18,7 +19,7 @@ pub struct Organizer {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct Timepoint {
-    pub date_time: String,
+    pub date_time: DateTime<Utc>,
     pub time_zone: String,
 }
 
