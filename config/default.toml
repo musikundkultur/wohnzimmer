@@ -26,10 +26,24 @@ event_source = "static"
 
 # List of events used by the `static` event source.
 events = [
+    # 2022
     { date = "2022-10-28T19:00:00+01:00", title = "Halloween-Party" },
     { date = "2022-11-04T19:00:00+01:00", title = "Geschlossene Gesellschaft" },
     { date = "2022-11-18T19:00:00+01:00", title = "Kneipenquiz" },
     { date = "2022-12-02T19:00:00+01:00", title = "Vorverkaufsparty Weihnachtskonzert" },
     { date = "2022-12-09T19:00:00+01:00", title = "Lesung" },
-    { date = "2022-12-25T19:00:00+01:00", title = "Weihnachtskonzert" }
+    { date = "2022-12-25T19:00:00+01:00", title = "Weihnachtskonzert" },
+    # 2023
+    { date = "2023-01-14T18:00:00+01:00", title = "Privatveranstaltung" },
+    { date = "2023-01-20T18:00:00+01:00", title = "Privatveranstaltung" },
+    { date = "2023-01-27T18:00:00+01:00", title = "Kneipenquiz" },
+    { date = "2023-01-28T18:00:00+01:00", title = "Privatveranstaltung" },
+    { date = "2023-02-03T18:00:00+01:00", title = "Barabend" },
+    { date = "2023-02-11T18:00:00+01:00", title = "Skrrr Skrrr" },
+    { date = "2023-02-17T18:00:00+01:00", title = "Smith & Smart / DJ Cutrock" },
+    { date = "2023-02-24T18:00:00+01:00", title = "Barabend" },
+    { date = "2023-03-03T18:00:00+01:00", title = "Kassettenriccardo & Support" },
+    { date = "2023-03-10T18:00:00+01:00", title = "Ladies Night" },
+    { date = "2023-03-17T17:00:00+01:00", title = "Till Burgwächter (Lesung)" },
+    { date = "2023-03-24T18:00:00+01:00", title = "Barabend" },
 ]
