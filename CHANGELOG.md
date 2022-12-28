@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.1...v0.2.2) (2022-12-28)
+
+
+### Miscellaneous
+
+* add events for Q1 2023 ([#16](https://github.com/musikundkultur/wohnzimmer/issues/16)) ([2c36bda](https://github.com/musikundkultur/wohnzimmer/commit/2c36bdaa4cba563ca763d7fc9ff3b53b238e2d56))
+
 ## [0.2.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.0...v0.2.1) (2022-12-22)
 
 
