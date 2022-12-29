@@ -81,7 +81,7 @@ pub struct GoogleCalendarEventSource {
 }
 
 impl GoogleCalendarEventSource {
-    pub async fn new() -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self {
             client: GoogleCalendarClient::new(None)?,
         })

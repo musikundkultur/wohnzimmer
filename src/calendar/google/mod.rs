@@ -1,6 +1,6 @@
 pub mod models;
 use indexmap::IndexMap;
-use reqwest::header;
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, AUTHORIZATION};
 use std::ops::Range;
 
 use chrono::{DateTime, SecondsFormat, Utc};
@@ -35,7 +35,7 @@ pub enum ClientError {
 
     /// Error while building http headers
     #[error("InvalidHeaderError: {0}")]
-    RequestInvalidHedaer(#[from] reqwest::header::InvalidHeaderValue),
+    InvalidHeaderValueError(#[from] reqwest::header::InvalidHeaderValue),
 
     /// No calendar id is found in env when it is not passed into client constructor
     #[error("MissingCalendarIDError: {0}")]
@@ -82,28 +82,24 @@ impl AuthMiddleware {
 impl Middleware for AuthMiddleware {
     async fn handle(
         &self,
-        req: Request,
+        mut req: Request,
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> reqwest_middleware::Result<Response> {
         let mut token = self.token.lock().await;
-        if !(token.is_some() && token.as_ref().unwrap().valid()) {
-            match refresh_token().await {
-                Ok(tok) => *token = Some(tok),
-                Err(e) => return Err(reqwest_middleware::Error::from(e)),
-            };
-        }
-        // should be safe to call unwrap here if refresh_token() fails the error is caught above so
-        // we should always have a valid token here
-        let access_token = &token.as_ref().unwrap().access_token;
 
-        // insert auth header
-        let mut req = req;
-        req.headers_mut().insert(
-            header::AUTHORIZATION,
-            header::HeaderValue::from_str(format!("Bearer {}", access_token).as_str())
-                .map_err(|err| ClientError::from(err))?,
-        );
+        let token = match token.as_ref() {
+            Some(token) if token.valid() => token,
+            _ => refresh_token().await.map(|t| {
+                *token = Some(t);
+                token.as_ref().unwrap()
+            })?,
+        };
+
+        let mut header = HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str())
+            .map_err(ClientError::from)?;
+        header.set_sensitive(true);
+        req.headers_mut().insert(AUTHORIZATION, header);
 
         next.run(req, extensions).await
     }
@@ -119,11 +115,8 @@ impl GoogleCalendarClient {
     pub fn new(calendar_id: Option<String>) -> Result<Self, ClientError> {
         // We only need readonly acccess
 
-        let mut headers = header::HeaderMap::new();
-        headers.insert(
-            header::ACCEPT_ENCODING,
-            header::HeaderValue::from_str("gzip")?,
-        );
+        let mut headers = HeaderMap::new();
+        headers.insert(ACCEPT_ENCODING, HeaderValue::from_str("gzip")?);
 
         let reqwest_client = reqwest::Client::builder()
             .default_headers(headers)

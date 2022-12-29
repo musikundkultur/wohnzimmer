@@ -98,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
         EventSourceKind::GoogleCalendar => {
             // @TODO(mohmann): we need to create a `GoogleCalendarEventSource` implementation.
             log::warn!("Google Calendar support is not implemented yet, falling back to static events from config");
-            Calendar::new(GoogleCalendarEventSource::new().await?)
+            Calendar::new(GoogleCalendarEventSource::new()?)
         }
     };
 
