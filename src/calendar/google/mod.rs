@@ -124,12 +124,6 @@ impl GoogleCalendarClient {
             header::ACCEPT_ENCODING,
             header::HeaderValue::from_str("gzip")?,
         );
-        headers.insert(
-            header::USER_AGENT,
-            header::HeaderValue::from_str(
-                format!("GCAL_CLIENT/{} (gzip)", env!("CARGO_PKG_VERSION")).as_str(),
-            )?,
-        );
 
         let reqwest_client = reqwest::Client::builder()
             .default_headers(headers)

@@ -1,6 +1,20 @@
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
+mod rfc3339_to_datetime_utc {
+    use chrono::{DateTime, TimeZone, Utc};
+    use serde::{self, Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let offset_time = DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?;
+        Ok(DateTime::from_utc(offset_time.naive_utc(), Utc))
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct Creator {
@@ -19,6 +33,7 @@ pub struct Organizer {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct Timepoint {
+    #[serde(with = "rfc3339_to_datetime_utc")]
     pub date_time: DateTime<Utc>,
     pub time_zone: String,
 }
@@ -67,7 +82,7 @@ pub struct Events {
     pub time_zone: String,
     pub access_role: String,
     pub default_reminders: Vec<String>,
-    pub next_sync_token: String,
+    pub next_sync_token: Option<String>,
     pub items: Vec<Event>,
     pub next_page_token: Option<String>,
 }
