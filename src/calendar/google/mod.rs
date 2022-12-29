@@ -46,6 +46,26 @@ pub enum ClientError {
     JsonParsingError(#[from] serde_json::Error),
 }
 
+async fn refresh_token() -> Result<google_cloud_auth::token::Token, ClientError> {
+    let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
+    let config = google_cloud_auth::Config {
+        audience: None,
+        scopes: Some(&scopes),
+    };
+
+    // This internally looks up the service account credentials that come from json key file
+    // generated in the google cloud console. The lookup happens via the
+    // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
+    let ts = google_cloud_auth::create_token_source(config).await?;
+    Ok(ts.token().await?)
+}
+
+impl From<ClientError> for reqwest_middleware::Error {
+    fn from(err: ClientError) -> Self {
+        reqwest_middleware::Error::Middleware(anyhow::Error::new(err))
+    }
+}
+
 struct AuthMiddleware {
     token: Mutex<Option<google_cloud_auth::token::Token>>,
 }
@@ -55,33 +75,6 @@ impl AuthMiddleware {
         Self {
             token: Mutex::new(None),
         }
-    }
-
-    async fn has_valid_token(&self) -> bool {
-        let token = self.token.lock().await;
-        return token.is_some() && token.as_ref().unwrap().valid();
-    }
-
-    async fn refresh_token(&self) -> Result<(), ClientError> {
-        let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
-        let config = google_cloud_auth::Config {
-            audience: None,
-            scopes: Some(&scopes),
-        };
-
-        // This internally looks up the service account credentials that come from json key file
-        // generated in the google cloud console. The lookup happens via the
-        // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
-        let ts = google_cloud_auth::create_token_source(config).await?;
-        let mut token = self.token.lock().await;
-        *token = Some(ts.token().await?);
-        Ok(())
-    }
-}
-
-impl From<ClientError> for reqwest_middleware::Error {
-    fn from(err: ClientError) -> Self {
-        reqwest_middleware::Error::Middleware(anyhow::Error::new(err))
     }
 }
 
@@ -93,15 +86,15 @@ impl Middleware for AuthMiddleware {
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> reqwest_middleware::Result<Response> {
-        if !self.has_valid_token().await {
-            match self.refresh_token().await {
-                Ok(_) => (),
+        let mut token = self.token.lock().await;
+        if !(token.is_some() && token.as_ref().unwrap().valid()) {
+            match refresh_token().await {
+                Ok(tok) => *token = Some(tok),
                 Err(e) => return Err(reqwest_middleware::Error::from(e)),
             };
         }
         // should be safe to call unwrap here if refresh_token() fails the error is caught above so
         // we should always have a valid token here
-        let token = self.token.lock().await;
         let access_token = &token.as_ref().unwrap().access_token;
 
         // insert auth header
