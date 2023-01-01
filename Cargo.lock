@@ -207,9 +207,9 @@ dependencies = [
 
 [[package]]
 name = "actix-web-lab"
-version = "0.18.5"
+version = "0.18.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b11277c9258b28bb2189b10c8910b729384d32afc7839d63568e0931d6a5493e"
+checksum = "caab4099eb0a9d1de2982b6687488b60fc2846600e9f4bcf5b249bde1879613f"
 dependencies = [
  "actix-files",
  "actix-http",
@@ -225,14 +225,13 @@ dependencies = [
  "bytestring",
  "csv",
  "derive_more",
- "digest",
  "futures-core",
  "futures-util",
- "generic-array",
- "hmac",
  "http",
+ "impl-more",
  "itertools",
  "local-channel",
+ "mediatype",
  "mime",
  "once_cell",
  "pin-project-lite",
@@ -240,16 +239,15 @@ dependencies = [
  "serde",
  "serde_html_form",
  "serde_json",
- "subtle",
  "tokio",
  "tracing",
 ]
 
 [[package]]
 name = "actix-web-lab-derive"
-version = "0.16.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a44a15d9ddb31a4f41decd22f743a154e519fb326120e8133ef9ea6283335ad2"
+checksum = "e4419acd7924ac473ccd00a6efea324dd382b0b7ae31b8e06cd2c58d4d7afae6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -652,7 +650,6 @@ checksum = "8168378f4e5023e7218c89c891c0fd8ecdb5e5e4f18cb78f38cf245dd021e76f"
 dependencies = [
  "block-buffer",
  "crypto-common",
- "subtle",
 ]
 
 [[package]]
@@ -816,15 +813,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hmac"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
-dependencies = [
- "digest",
-]
-
-[[package]]
 name = "http"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -892,6 +880,12 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
+
+[[package]]
+name = "impl-more"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d14c422088773284a62e155b3e2f700a52cd3731dabe2cffd914e13f71b6bd4e"
 
 [[package]]
 name = "indexmap"
@@ -1046,6 +1040,12 @@ checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "mediatype"
+version = "0.19.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a280afd79e5a4c3e7f298c6139321aad0365690f24a57539e18590b5a606966"
 
 [[package]]
 name = "memchr"
@@ -1531,12 +1531,6 @@ dependencies = [
  "libc",
  "winapi",
 ]
-
-[[package]]
-name = "subtle"
-version = "2.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
