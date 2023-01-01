@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.2...v0.2.3) (2023-01-01)
+
+
+### Miscellaneous
+
+* **deps:** bump actions/cache from 3.0.11 to 3.2.2 ([#18](https://github.com/musikundkultur/wohnzimmer/issues/18)) ([fa957dd](https://github.com/musikundkultur/wohnzimmer/commit/fa957ddddbd8260dde1dc6e40f103ca9968e774b))
+* **deps:** bump actix-web-lab from 0.18.5 to 0.18.8 ([#20](https://github.com/musikundkultur/wohnzimmer/issues/20)) ([9e0d811](https://github.com/musikundkultur/wohnzimmer/commit/9e0d811cba271865037712134b1251176702dc3f))
+* **deps:** bump env_logger from 0.9.3 to 0.10.0 ([#19](https://github.com/musikundkultur/wohnzimmer/issues/19)) ([529aeb2](https://github.com/musikundkultur/wohnzimmer/commit/529aeb26ff1e0fc1a8ae5c2f7fbf4af36e97af93))
+* **deps:** bump minijinja from 0.24.0 to 0.27.0 ([cd385c2](https://github.com/musikundkultur/wohnzimmer/commit/cd385c208d34eb39a754b900231e77a46a419f9d))
+* **deps:** bump thiserror from 1.0.37 to 1.0.38 ([#23](https://github.com/musikundkultur/wohnzimmer/issues/23)) ([4ba36fd](https://github.com/musikundkultur/wohnzimmer/commit/4ba36fd0d5edce4908bb89d8ff316d7053921574))
+
 ## [0.2.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.1...v0.2.2) (2022-12-28)
 
 
