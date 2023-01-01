@@ -1081,6 +1081,15 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36f65f01ba99f0dae44749515c1416d7875de7b06ae8b902466627b49553fc3f"
 dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "minijinja"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c758712a3652a2ce74855bf49af7b6684f089497c21a0d394f43c69464f858bf"
+dependencies = [
  "memo-map",
  "self_cell",
  "serde",
@@ -1092,7 +1101,7 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c13f1a720fa224764794f161ebbeeb1e8206a2ee29684ea00c3abe2f096d16"
 dependencies = [
- "minijinja",
+ "minijinja 0.24.0",
  "notify",
 ]
 
@@ -1935,7 +1944,7 @@ dependencies = [
  "env_logger",
  "indexmap",
  "log",
- "minijinja",
+ "minijinja 0.27.0",
  "minijinja-autoreload",
  "serde",
  "thiserror",
