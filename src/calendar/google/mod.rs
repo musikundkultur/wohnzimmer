@@ -86,21 +86,23 @@ impl Middleware for AuthMiddleware {
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> reqwest_middleware::Result<Response> {
-        let mut token = self.token.lock().await;
+        {
+            let mut token = self.token.lock().await;
 
-        let token = match token.as_ref() {
-            Some(token) if token.valid() => token,
-            _ => refresh_token().await.map(|t| {
-                *token = Some(t);
-                token.as_ref().unwrap()
-            })?,
-        };
+            let token = match token.as_ref() {
+                Some(token) if token.valid() => token,
+                _ => refresh_token().await.map(|t| {
+                    *token = Some(t);
+                    token.as_ref().unwrap()
+                })?,
+            };
 
-        let mut header = HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str())
-            .map_err(ClientError::from)?;
-        header.set_sensitive(true);
-        req.headers_mut().insert(AUTHORIZATION, header);
-
+            let mut header =
+                HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str())
+                    .map_err(ClientError::from)?;
+            header.set_sensitive(true);
+            req.headers_mut().insert(AUTHORIZATION, header);
+        }
         next.run(req, extensions).await
     }
 }
