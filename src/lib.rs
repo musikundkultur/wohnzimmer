@@ -18,6 +18,8 @@ pub enum Error {
     Io(#[from] io::Error),
     #[error("config error: {0}")]
     Config(#[from] config::ConfigError),
+    #[error("Client error: {0}")]
+    GoogleCalendar(#[from] calendar::google::ClientError),
 }
 
 /// A link configuration.

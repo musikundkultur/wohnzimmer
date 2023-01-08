@@ -14,7 +14,9 @@ use chrono::{Months, Utc};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
 use wohnzimmer::{
-    calendar::{Calendar, EventSourceKind, EventsByYear, StaticEventSource},
+    calendar::{
+        Calendar, EventSourceKind, EventsByYear, GoogleCalendarEventSource, StaticEventSource,
+    },
     AppConfig,
 };
 
@@ -96,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
         EventSourceKind::GoogleCalendar => {
             // @TODO(mohmann): we need to create a `GoogleCalendarEventSource` implementation.
             log::warn!("Google Calendar support is not implemented yet, falling back to static events from config");
-            Calendar::new(StaticEventSource::new(config.calendar.events.clone()))
+            Calendar::new(GoogleCalendarEventSource::new()?)
         }
     };
 
