@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.3...v0.3.0) (2023-01-13)
+
+
+### Features
+
+* add google calendar integration ([#15](https://github.com/musikundkultur/wohnzimmer/issues/15)) ([14aa237](https://github.com/musikundkultur/wohnzimmer/commit/14aa237791cf0f3cd0c23db3b69d0be9f3ca8020))
+
 ## [0.2.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.2...v0.2.3) (2023-01-01)
 
 
