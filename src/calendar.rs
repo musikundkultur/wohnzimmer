@@ -1,6 +1,9 @@
+pub mod google;
+
 use super::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Datelike, Locale, Utc};
+use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
@@ -69,6 +72,42 @@ impl EventSource for StaticEventSource {
             .collect();
 
         Ok(events)
+    }
+}
+
+#[derive(Debug)]
+pub struct GoogleCalendarEventSource {
+    client: GoogleCalendarClient,
+}
+
+impl GoogleCalendarEventSource {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            client: GoogleCalendarClient::new(None)?,
+        })
+    }
+}
+
+impl From<google::models::Event> for Event {
+    fn from(ev: google::models::Event) -> Self {
+        Self {
+            date: ev.start.date_time,
+            title: ev.summary,
+        }
+    }
+}
+
+#[async_trait]
+impl EventSource for GoogleCalendarEventSource {
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        Ok(self
+            .client
+            .get_events(Some(range), None, None)
+            .await?
+            .0
+            .into_iter()
+            .map(Event::from)
+            .collect())
     }
 }
 
