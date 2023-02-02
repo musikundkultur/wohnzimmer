@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.0...v0.3.1) (2023-02-02)
+
+
+### Miscellaneous
+
+* **events:** remove Skrrr Skrrr ([c56ce03](https://github.com/musikundkultur/wohnzimmer/commit/c56ce034182b8fce808a8b64b6765db516f8a8c9))
+
 ## [0.3.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.2.3...v0.3.0) (2023-01-13)
 
 
