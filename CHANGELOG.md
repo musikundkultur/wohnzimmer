@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.1...v0.3.2) (2023-02-22)
+
+
+### Miscellaneous
+
+* **events:** rename Ladies Night to Cocktail Night ([#34](https://github.com/musikundkultur/wohnzimmer/issues/34)) ([8466ba3](https://github.com/musikundkultur/wohnzimmer/commit/8466ba33948c5bceeaaacf0df3f1aadb928444e3))
+
 ## [0.3.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.0...v0.3.1) (2023-02-02)
 
 
