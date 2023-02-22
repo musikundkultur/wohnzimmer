@@ -43,7 +43,7 @@ events = [
     { date = "2023-02-17T18:00:00+01:00", title = "Smith & Smart / DJ Cutrock" },
     { date = "2023-02-24T18:00:00+01:00", title = "Barabend" },
     { date = "2023-03-03T18:00:00+01:00", title = "Kassettenriccardo & Support" },
-    { date = "2023-03-10T18:00:00+01:00", title = "Ladies Night" },
+    { date = "2023-03-10T18:00:00+01:00", title = "Cocktail Night" },
     { date = "2023-03-17T17:00:00+01:00", title = "Till Burgwächter (Lesung)" },
     { date = "2023-03-24T18:00:00+01:00", title = "Barabend" },
 ]
