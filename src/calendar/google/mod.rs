@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 pub type DateRange = Range<DateTime<Utc>>;
 
 /// Google calendar client for making requests to the google calendar api
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GoogleCalendarClient {
     client: ClientWithMiddleware,
     calendar_id: String,

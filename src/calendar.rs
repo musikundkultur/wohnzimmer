@@ -7,6 +7,9 @@ use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::task;
 
 /// Type alias for a date represented in UTC.
 pub type UtcDate = DateTime<Utc>;
@@ -78,12 +81,14 @@ impl EventSource for StaticEventSource {
 #[derive(Debug)]
 pub struct GoogleCalendarEventSource {
     client: GoogleCalendarClient,
+    cache: Arc<Mutex<Option<Vec<Event>>>>,
 }
 
 impl GoogleCalendarEventSource {
     pub fn new() -> Result<Self> {
         Ok(Self {
             client: GoogleCalendarClient::new(None)?,
+            cache: Arc::new(Mutex::new(None)),
         })
     }
 }
@@ -100,14 +105,44 @@ impl From<google::models::Event> for Event {
 #[async_trait]
 impl EventSource for GoogleCalendarEventSource {
     async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        Ok(self
-            .client
-            .get_events(Some(range), None, None)
-            .await?
-            .0
-            .into_iter()
-            .map(Event::from)
-            .collect())
+        let cache = self.cache.lock().await.clone();
+
+        match cache {
+            Some(events) => {
+                // We already have cached events. Spawn a non-blocking background task to refresh
+                // the event cache before returning the current value.
+                let client = self.client.clone();
+                let cache = self.cache.clone();
+
+                task::spawn(async move {
+                    match client.get_events(Some(range), None, None).await {
+                        Ok(res) => {
+                            *cache.lock().await =
+                                Some(res.0.into_iter().map(Event::from).collect());
+                        }
+                        Err(err) => {
+                            log::error!("failed to fetch calendar events: {}", err);
+                        }
+                    }
+                });
+
+                Ok(events)
+            }
+            None => {
+                // We don't have anything in the cache, fetch events in the foreground (blocking
+                // the request) and cache them.
+                let events: Vec<Event> = self
+                    .client
+                    .get_events(Some(range), None, None)
+                    .await?
+                    .0
+                    .into_iter()
+                    .map(Event::from)
+                    .collect();
+                *self.cache.lock().await = Some(events.clone());
+                Ok(events)
+            }
+        }
     }
 }
 
