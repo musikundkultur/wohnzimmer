@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.2...v0.3.3) (2023-03-21)
+
+
+### Miscellaneous
+
+* **deps:** bump actions/cache from 3.2.2 to 3.2.6 ([#36](https://github.com/musikundkultur/wohnzimmer/issues/36)) ([7b38395](https://github.com/musikundkultur/wohnzimmer/commit/7b38395ba79d83d7463e44f97ee9bb5bb36e5b40))
+* **deps:** bump actix-web from 4.2.1 to 4.3.1 ([#38](https://github.com/musikundkultur/wohnzimmer/issues/38)) ([839b8b4](https://github.com/musikundkultur/wohnzimmer/commit/839b8b4c11097cdb77ec211c3b2460f2e9c5b3d9))
+* **deps:** bump async-trait from 0.1.61 to 0.1.64 ([#30](https://github.com/musikundkultur/wohnzimmer/issues/30)) ([fc66b94](https://github.com/musikundkultur/wohnzimmer/commit/fc66b9412a0997c47314d4cc432c788ed1eeb6d2))
+* **deps:** bump docker/build-push-action from 3 to 4 ([#27](https://github.com/musikundkultur/wohnzimmer/issues/27)) ([9175b16](https://github.com/musikundkultur/wohnzimmer/commit/9175b16e945d5e33c753f5159642d6c96d3a8f28))
+* **deps:** bump reqwest from 0.11.13 to 0.11.14 ([#29](https://github.com/musikundkultur/wohnzimmer/issues/29)) ([fec2e77](https://github.com/musikundkultur/wohnzimmer/commit/fec2e77e96690f04555ffd0ab77c451535d3f651))
+* **deps:** bump tokio from 1.24.1 to 1.25.0 ([#28](https://github.com/musikundkultur/wohnzimmer/issues/28)) ([9817951](https://github.com/musikundkultur/wohnzimmer/commit/9817951e7f9418cefcb98c64e4a3f00cb0b3744e))
+* **events:** add calendar entries until May ([18270e1](https://github.com/musikundkultur/wohnzimmer/commit/18270e1bee5482b64e2dc04a9d6efa50e310a35a))
+
 ## [0.3.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.1...v0.3.2) (2023-02-22)
 
 
