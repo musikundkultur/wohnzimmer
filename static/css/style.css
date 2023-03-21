@@ -184,6 +184,7 @@ a:hover {
 
 .content .events th {
   text-align: left;
+  white-space: nowrap;
 }
 
 .content .events td {
