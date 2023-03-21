@@ -46,4 +46,9 @@ events = [
     { date = "2023-03-10T18:00:00+01:00", title = "Cocktail Night" },
     { date = "2023-03-17T17:00:00+01:00", title = "Till Burgwächter (Lesung)" },
     { date = "2023-03-24T18:00:00+01:00", title = "Barabend" },
+    { date = "2023-03-31T17:00:00+01:00", title = "Kollektiv:proton Kunstprojekt & Filmvorführung" },
+    { date = "2023-03-31T18:00:00+01:00", title = "Barabend" },
+    { date = "2023-04-21T18:00:00+01:00", title = "Barabend" },
+    { date = "2023-04-28T18:00:00+01:00", title = "Kneipenquiz" },
+    { date = "2023-04-29T18:00:00+01:00", title = "Geschlossene Gesellschaft" },
 ]
