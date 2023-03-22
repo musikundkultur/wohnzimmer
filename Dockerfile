@@ -20,6 +20,7 @@ RUN cargo build --release
 
 ## Package
 FROM debian:bullseye-slim
+RUN apt-get update && apt-get install --yes ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/wohnzimmer /usr/local/bin/wohnzimmer
 COPY config/ config/
 COPY static/ static/
