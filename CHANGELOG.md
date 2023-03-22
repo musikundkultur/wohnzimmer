@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.3...v0.4.0) (2023-03-22)
+
+
+### Features
+
+* **calendar:** add caching layer ([#40](https://github.com/musikundkultur/wohnzimmer/issues/40)) ([03d90ba](https://github.com/musikundkultur/wohnzimmer/commit/03d90ba02e54722e7a0cb198833c47f81b447236))
+* **events:** enable Google Calendar integration ([#44](https://github.com/musikundkultur/wohnzimmer/issues/44)) ([221c331](https://github.com/musikundkultur/wohnzimmer/commit/221c331d5ab4c1fb502024c8c76d12f8a521fa69))
+
+
+### Bug Fixes
+
+* **events:** prevent wrapping of event date ([c846eb5](https://github.com/musikundkultur/wohnzimmer/commit/c846eb5dc28ad75fbdbb09dfc471c54a027c7888))
+
 ## [0.3.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.2...v0.3.3) (2023-03-21)
 
 
