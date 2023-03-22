@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.5.0...v0.5.1) (2023-03-22)
+
+
+### Miscellaneous
+
+* fix calendar example ([d4b2a74](https://github.com/musikundkultur/wohnzimmer/commit/d4b2a7421495095f3ae13d9c093e7b3e7e4cdc64))
+
 ## [0.5.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.4.1...v0.5.0) (2023-03-22)
 
 
