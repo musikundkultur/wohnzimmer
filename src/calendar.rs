@@ -1,12 +1,18 @@
 pub mod google;
 
 use super::Result;
+use crate::{CalendarCacheConfig, CalendarConfig};
 use async_trait::async_trait;
+use cached::{Cached, SizedCache};
 use chrono::{DateTime, Datelike, Locale, Utc};
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::task;
+use tokio::time::{Duration, Instant};
 
 /// Type alias for a date represented in UTC.
 pub type UtcDate = DateTime<Utc>;
@@ -111,9 +117,145 @@ impl EventSource for GoogleCalendarEventSource {
     }
 }
 
+#[derive(Clone)]
+struct CacheEntry<T> {
+    value: T,
+    expiry: Instant,
+}
+
+impl<T> CacheEntry<T> {
+    fn new(value: T, ttl: Duration) -> CacheEntry<T> {
+        CacheEntry {
+            value,
+            expiry: Instant::now() + ttl,
+        }
+    }
+
+    fn extend_lifetime(&mut self, ttl: Duration) {
+        self.expiry = Instant::now() + ttl;
+    }
+
+    fn is_expired(&self) -> bool {
+        self.expiry < Instant::now()
+    }
+}
+
+type CacheKey = Range<UtcDate>;
+type EventCache = SizedCache<CacheKey, CacheEntry<Vec<Event>>>;
+
+pub struct CachedEventSource<T> {
+    cache: Arc<Mutex<EventCache>>,
+    inner: Arc<T>,
+    ttl: Duration,
+}
+
+impl<T> CachedEventSource<T> {
+    /// Creates a new `CachedEventSource` from an inner `T` and a cache entry TTL.
+    pub fn new(inner: T, ttl: Duration) -> CachedEventSource<T> {
+        CachedEventSource {
+            cache: Arc::new(Mutex::new(EventCache::with_size(10))), // Size of 10 is plenty for our use case.
+            inner: Arc::new(inner),
+            ttl,
+        }
+    }
+
+    /// Creates a new `CachedEventSource` from an inner `T` and a cache configuration.
+    pub fn from_config(inner: T, config: &CalendarCacheConfig) -> CachedEventSource<T> {
+        let ttl_seconds = config.ttl_seconds.unwrap_or(10);
+
+        log::info!("creating event cache with TTL of {ttl_seconds}s");
+
+        CachedEventSource::new(inner, Duration::from_secs(ttl_seconds))
+    }
+}
+
+impl<T> CachedEventSource<T>
+where
+    T: EventSource + 'static,
+{
+    fn spawn_refresh_task(&self, key: CacheKey, range: Range<UtcDate>) {
+        let event_source = self.inner.clone();
+        let cache = self.cache.clone();
+        let ttl = self.ttl;
+
+        task::spawn(async move {
+            log::debug!("refreshing cache key `{:?}`", key);
+
+            match event_source.get_events(range).await {
+                Ok(events) => {
+                    let entry = CacheEntry::new(events, ttl);
+                    cache.lock().await.cache_set(key, entry);
+                }
+                Err(err) => {
+                    log::error!("failed to refresh cache key `{:?}`: {}", key, err);
+                }
+            }
+        });
+    }
+}
+
+#[async_trait]
+impl<T> EventSource for CachedEventSource<T>
+where
+    T: EventSource + 'static,
+{
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        let key = range.clone();
+
+        let mut cache = self.cache.lock().await;
+
+        match cache.cache_get_mut(&key) {
+            Some(entry) if entry.is_expired() => {
+                log::debug!("cache hit for `{:?}` (expiring)", key);
+
+                // Extend the lifetime of the expired entry by another TTL period before spawning
+                // the background refresh task. We do this to prevent other in-flight requests from
+                // triggering another refresh for this key while its background refresh task is
+                // still running.
+                entry.extend_lifetime(self.ttl);
+                self.spawn_refresh_task(key, range);
+                Ok(entry.value.clone())
+            }
+            Some(entry) => {
+                log::debug!("cache hit for `{:?}`", key);
+
+                Ok(entry.value.clone())
+            }
+            None => {
+                log::debug!("cache miss for `{:?}`, fetching events from source", key);
+
+                let events = self.inner.get_events(range.clone()).await?;
+                let entry = CacheEntry::new(events.clone(), self.ttl);
+                cache.cache_set(key, entry);
+                Ok(events)
+            }
+        }
+    }
+}
+
+#[async_trait]
+impl<T> EventSource for Box<T>
+where
+    T: EventSource + ?Sized,
+{
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        (**self).get_events(range).await
+    }
+}
+
+#[async_trait]
+impl<T> EventSource for Arc<T>
+where
+    T: EventSource + ?Sized,
+{
+    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+        (**self).get_events(range).await
+    }
+}
+
 /// The `Calendar` type wraps an event source with additional functionality.
 pub struct Calendar {
-    event_source: Box<dyn EventSource + 'static>,
+    event_source: Box<dyn EventSource>,
 }
 
 impl Calendar {
@@ -125,6 +267,22 @@ impl Calendar {
         Calendar {
             event_source: Box::new(event_source),
         }
+    }
+
+    /// Creates a new `Calendar` from configuration.
+    pub fn from_config(config: &CalendarConfig) -> Result<Calendar> {
+        let event_source: Box<dyn EventSource> = match config.event_source {
+            EventSourceKind::Static => Box::new(StaticEventSource::new(config.events.clone())),
+            EventSourceKind::GoogleCalendar => Box::new(GoogleCalendarEventSource::new()?),
+        };
+
+        let calendar = if config.cache.enabled {
+            Calendar::new(CachedEventSource::from_config(event_source, &config.cache))
+        } else {
+            Calendar::new(event_source)
+        };
+
+        Ok(calendar)
     }
 
     /// Filters events between a start date (inclusive) and an end date (exclusive).
@@ -167,6 +325,7 @@ mod tests {
     use super::*;
     use chrono::TimeZone;
     use indexmap::indexmap;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     macro_rules! date {
         ($y:expr, $m:expr, $d:expr) => {
@@ -242,5 +401,59 @@ mod tests {
                 .unwrap(),
             expected
         );
+    }
+
+    #[actix_rt::test]
+    async fn cached_event_source() {
+        // A fake `EventSource` which just counts invocations of `get_events` and returns a fake
+        // event.
+        struct Counter(AtomicUsize);
+
+        #[async_trait]
+        impl EventSource for Counter {
+            async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+                self.0.fetch_add(1, Ordering::SeqCst);
+                Ok(vec![Event {
+                    title: "event".into(),
+                    date: range.start.clone(),
+                }])
+            }
+        }
+
+        let counter = Arc::new(Counter(AtomicUsize::new(0)));
+
+        let es = CachedEventSource::new(counter.clone(), Duration::from_millis(100));
+        let range1 = date!(2022, 1, 1)..date!(2022, 1, 2);
+        let range2 = date!(2022, 1, 2)..date!(2022, 1, 3);
+
+        assert_eq!(
+            es.get_events(range1.clone()).await.unwrap(),
+            vec![event!("event", 2022, 1, 1)]
+        );
+
+        assert_eq!(
+            es.get_events(range2.clone()).await.unwrap(),
+            vec![event!("event", 2022, 1, 2)]
+        );
+
+        // This call is cached.
+        assert_eq!(
+            es.get_events(range1.clone()).await.unwrap(),
+            vec![event!("event", 2022, 1, 1)]
+        );
+
+        assert_eq!(counter.0.load(Ordering::Relaxed), 2);
+
+        // Let the cache expire.
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        // These calls trigger a background cache refresh, because the cache expired.
+        es.get_events(range2).await.unwrap();
+        es.get_events(range1).await.unwrap();
+
+        // Give the background tasks some time to finish.
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        assert_eq!(counter.0.load(Ordering::Relaxed), 4);
     }
 }
