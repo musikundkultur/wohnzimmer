@@ -11,6 +11,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
 
     let calendar = Calendar::new(GoogleCalendarEventSource::new().await?);
+    calendar.sync_once().await?;
 
     let now = Utc::now();
     let one_month_ago = now - Months::new(1);
