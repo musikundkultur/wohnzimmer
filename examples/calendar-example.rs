@@ -3,7 +3,6 @@ extern crate dotenv;
 use chrono::{Months, Utc};
 use dotenv::dotenv;
 use std::error::Error;
-
 use wohnzimmer::calendar::{Calendar, GoogleCalendarEventSource};
 
 #[tokio::main]
@@ -11,7 +10,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
 
-    let calendar = Calendar::new(GoogleCalendarEventSource::new()?);
+    let calendar = Calendar::new(GoogleCalendarEventSource::new().await?);
 
     let now = Utc::now();
     let one_month_ago = now - Months::new(1);

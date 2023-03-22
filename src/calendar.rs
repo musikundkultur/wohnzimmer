@@ -87,9 +87,9 @@ pub struct GoogleCalendarEventSource {
 }
 
 impl GoogleCalendarEventSource {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
-            client: GoogleCalendarClient::new(None)?,
+    pub async fn new() -> Result<GoogleCalendarEventSource> {
+        Ok(GoogleCalendarEventSource {
+            client: GoogleCalendarClient::new().await?,
         })
     }
 }
@@ -270,10 +270,10 @@ impl Calendar {
     }
 
     /// Creates a new `Calendar` from configuration.
-    pub fn from_config(config: &CalendarConfig) -> Result<Calendar> {
+    pub async fn from_config(config: &CalendarConfig) -> Result<Calendar> {
         let event_source: Box<dyn EventSource> = match config.event_source {
             EventSourceKind::Static => Box::new(StaticEventSource::new(config.events.clone())),
-            EventSourceKind::GoogleCalendar => Box::new(GoogleCalendarEventSource::new()?),
+            EventSourceKind::GoogleCalendar => Box::new(GoogleCalendarEventSource::new().await?),
         };
 
         let calendar = if config.cache.enabled {

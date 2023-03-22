@@ -1,63 +1,48 @@
 pub mod models;
-use indexmap::IndexMap;
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, AUTHORIZATION};
-use std::ops::Range;
 
 use chrono::{DateTime, SecondsFormat, Utc};
+use google_cloud_auth::token::DefaultTokenSourceProvider;
+use google_cloud_token::{TokenSource, TokenSourceProvider};
+use indexmap::IndexMap;
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, AUTHORIZATION};
 use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
+use std::ops::Range;
+use std::sync::Arc;
 use task_local_extensions::Extensions;
-use tokio::sync::Mutex;
 
 /// Represents a timeframe with a start and end time
 pub type DateRange = Range<DateTime<Utc>>;
 
-/// Google calendar client for making requests to the google calendar api
-#[derive(Debug)]
-pub struct GoogleCalendarClient {
-    client: ClientWithMiddleware,
-    calendar_id: String,
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
-    /// Errpr while authenticating with google
-    #[error("Authentication error: {0}")]
-    GCloudAuthError(#[from] google_cloud_auth::error::Error),
+    /// Error while authenticating with google.
+    #[error("failed to authenticate: {0}")]
+    GCloudAuth(#[from] google_cloud_auth::error::Error),
 
-    /// Error while making a http request
-    #[error("RequestError: {0}")]
-    RequestError(#[from] reqwest::Error),
+    /// Error while making a http request.
+    #[error("failure requesting remote resource: {0}")]
+    Request(#[from] reqwest::Error),
 
-    /// Error while executing some middleware code
-    #[error("RequestMiddlewareError: {0}")]
-    RequestMiddlewareError(#[from] reqwest_middleware::Error),
+    /// Error while executing some middleware code.
+    #[error("request middleware failed with: {0}")]
+    RequestMiddleware(#[from] reqwest_middleware::Error),
 
-    /// Error while building http headers
-    #[error("InvalidHeaderError: {0}")]
-    InvalidHeaderValueError(#[from] reqwest::header::InvalidHeaderValue),
+    /// Error while building http headers.
+    #[error("encountered invalid HTTP header value: {0}")]
+    InvalidHeaderValue(#[from] reqwest::header::InvalidHeaderValue),
 
-    /// No calendar id is found in env when it is not passed into client constructor
-    #[error("MissingCalendarIDError: {0}")]
-    MissingCalendarIDError(#[from] std::env::VarError),
+    /// Error when `GOOGLE_CALENDAR_ID` environment variable is not set.
+    #[error("missing required environment variable `GOOGLE_CALENDAR_ID`")]
+    MissingCalendarID,
 
-    /// Error while parsing responses
-    #[error("JsonParsingError: {0}")]
-    JsonParsingError(#[from] serde_json::Error),
-}
+    /// Error while parsing a JSON response.
+    #[error("failed to parse response as JSON: {0}")]
+    Json(#[from] serde_json::Error),
 
-async fn refresh_token() -> Result<google_cloud_auth::token::Token, ClientError> {
-    let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
-    let config = google_cloud_auth::Config {
-        audience: None,
-        scopes: Some(&scopes),
-    };
-
-    // This internally looks up the service account credentials that come from json key file
-    // generated in the google cloud console. The lookup happens via the
-    // GOOGLE_APPLICATION_CREDENTIALS environments stored in the .env file
-    let ts = google_cloud_auth::create_token_source(config).await?;
-    Ok(ts.token().await?)
+    /// Error while obtaining an authentication token.
+    #[error("failed to obtain authentication token: {0}")]
+    Token(String),
 }
 
 impl From<ClientError> for reqwest_middleware::Error {
@@ -67,14 +52,12 @@ impl From<ClientError> for reqwest_middleware::Error {
 }
 
 struct AuthMiddleware {
-    token: Mutex<Option<google_cloud_auth::token::Token>>,
+    token_source: Arc<dyn TokenSource>,
 }
 
 impl AuthMiddleware {
-    fn new() -> Self {
-        Self {
-            token: Mutex::new(None),
-        }
+    fn new(token_source: Arc<dyn TokenSource>) -> AuthMiddleware {
+        AuthMiddleware { token_source }
     }
 }
 
@@ -86,25 +69,24 @@ impl Middleware for AuthMiddleware {
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> reqwest_middleware::Result<Response> {
-        {
-            let mut token = self.token.lock().await;
+        let token = self
+            .token_source
+            .token()
+            .await
+            .map_err(|err| ClientError::Token(err.to_string()))?;
 
-            let token = match token.as_ref() {
-                Some(token) if token.valid() => token,
-                _ => refresh_token().await.map(|t| {
-                    *token = Some(t);
-                    token.as_ref().unwrap()
-                })?,
-            };
-
-            let mut header =
-                HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str())
-                    .map_err(ClientError::from)?;
-            header.set_sensitive(true);
-            req.headers_mut().insert(AUTHORIZATION, header);
-        }
+        let mut header = HeaderValue::try_from(token).map_err(ClientError::from)?;
+        header.set_sensitive(true);
+        req.headers_mut().insert(AUTHORIZATION, header);
         next.run(req, extensions).await
     }
+}
+
+/// Google calendar client for making requests to the google calendar api
+#[derive(Debug)]
+pub struct GoogleCalendarClient {
+    client: ClientWithMiddleware,
+    calendar_id: String,
 }
 
 impl GoogleCalendarClient {
@@ -114,24 +96,36 @@ impl GoogleCalendarClient {
     /// GOOGLE_APPLICATION_CREDENTIALS_JSON variable containing the content of said json file
     /// encoded as base64. It will further fetch the id of the calendar that it will query from
     /// the GOOGLE_CALENDAR_ID environment variable.
-    pub fn new(calendar_id: Option<String>) -> Result<Self, ClientError> {
-        // We only need readonly acccess
+    pub async fn new() -> Result<GoogleCalendarClient, ClientError> {
+        let calendar_id = match std::env::var("GOOGLE_CALENDAR_ID") {
+            Ok(calendar_id) => calendar_id,
+            Err(_) => return Err(ClientError::MissingCalendarID),
+        };
+
+        let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
+        let config = google_cloud_auth::project::Config {
+            audience: None,
+            scopes: Some(&scopes),
+        };
+
+        let token_source = DefaultTokenSourceProvider::new(config)
+            .await?
+            .token_source();
 
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT_ENCODING, HeaderValue::from_str("gzip")?);
 
-        let reqwest_client = reqwest::Client::builder()
-            .default_headers(headers)
-            .build()?;
+        let client = ClientBuilder::new(
+            reqwest::Client::builder()
+                .default_headers(headers)
+                .build()?,
+        )
+        .with(AuthMiddleware::new(token_source))
+        .build();
 
-        Ok(Self {
-            client: ClientBuilder::new(reqwest_client)
-                .with(AuthMiddleware::new())
-                .build(),
-            calendar_id: match calendar_id {
-                Some(id) => id,
-                None => std::env::var("GOOGLE_CALENDAR_ID")?,
-            },
+        Ok(GoogleCalendarClient {
+            client,
+            calendar_id,
         })
     }
 
