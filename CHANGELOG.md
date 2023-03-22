@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.4.0...v0.4.1) (2023-03-22)
+
+
+### Bug Fixes
+
+* add missing `ca-certificates` to image ([b1b8e27](https://github.com/musikundkultur/wohnzimmer/commit/b1b8e27ce01ca9a09acc84fd7546fb3f20c4747a))
+
 ## [0.4.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.3.3...v0.4.0) (2023-03-22)
 
 
