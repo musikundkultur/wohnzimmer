@@ -6,6 +6,4 @@ canonical_url = "https://alhambra-luckenwalde.de"
 
 [calendar]
 event_source = "google-calendar"
-
-[calendar.cache]
-enabled = true
+sync_period_seconds = 300

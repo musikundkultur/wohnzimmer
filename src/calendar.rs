@@ -1,18 +1,17 @@
 pub mod google;
 
 use super::Result;
-use crate::{CalendarCacheConfig, CalendarConfig};
+use crate::CalendarConfig;
 use async_trait::async_trait;
-use cached::{Cached, SizedCache};
-use chrono::{DateTime, Datelike, Locale, Utc};
+use chrono::{DateTime, Datelike, Locale, Months, Utc};
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use std::sync::Arc;
+use tokio::sync::oneshot::{self, Receiver, Sender};
 use tokio::sync::Mutex;
-use tokio::task;
-use tokio::time::{Duration, Instant};
+use tokio::time::Duration;
 
 /// Type alias for a date represented in UTC.
 pub type UtcDate = DateTime<Utc>;
@@ -43,8 +42,8 @@ pub enum EventSourceKind {
 /// Trait that needs to be implemented by a source of calendar events.
 #[async_trait]
 pub trait EventSource: Send + Sync {
-    /// Filters events between a start date (inclusive) and an end date (exclusive).
-    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>>;
+    /// Fetches events from the source.
+    async fn fetch_events(&self) -> Result<Vec<Event>>;
 }
 
 /// An `EventSource` that returns events from a static list.
@@ -59,25 +58,16 @@ impl StaticEventSource {
         I: IntoIterator,
         I::Item: Into<Event>,
     {
-        let mut events: Vec<Event> = iter.into_iter().map(Into::into).collect();
-        // Ensure events are always sorted by date.
-        events.sort_by_key(|event| event.date);
-
-        StaticEventSource { events }
+        StaticEventSource {
+            events: iter.into_iter().map(Into::into).collect(),
+        }
     }
 }
 
 #[async_trait]
 impl EventSource for StaticEventSource {
-    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        let events = self
-            .events
-            .iter()
-            .filter(|event| range.contains(&event.date))
-            .cloned()
-            .collect();
-
-        Ok(events)
+    async fn fetch_events(&self) -> Result<Vec<Event>> {
+        Ok(self.events.clone())
     }
 }
 
@@ -105,131 +95,17 @@ impl From<google::models::Event> for Event {
 
 #[async_trait]
 impl EventSource for GoogleCalendarEventSource {
-    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        Ok(self
+    async fn fetch_events(&self) -> Result<Vec<Event>> {
+        let now = Utc::now();
+        let one_month_ago = now - Months::new(1);
+        let in_six_months = now + Months::new(6);
+
+        let events = self
             .client
-            .get_events(Some(range), None, None)
-            .await?
-            .0
-            .into_iter()
-            .map(Event::from)
-            .collect())
-    }
-}
+            .get_events(Some(one_month_ago..in_six_months), None, None)
+            .await?;
 
-#[derive(Clone)]
-struct CacheEntry<T> {
-    value: T,
-    expiry: Instant,
-}
-
-impl<T> CacheEntry<T> {
-    fn new(value: T, ttl: Duration) -> CacheEntry<T> {
-        CacheEntry {
-            value,
-            expiry: Instant::now() + ttl,
-        }
-    }
-
-    fn extend_lifetime(&mut self, ttl: Duration) {
-        self.expiry = Instant::now() + ttl;
-    }
-
-    fn is_expired(&self) -> bool {
-        self.expiry < Instant::now()
-    }
-}
-
-type CacheKey = Range<UtcDate>;
-type EventCache = SizedCache<CacheKey, CacheEntry<Vec<Event>>>;
-
-pub struct CachedEventSource<T> {
-    cache: Arc<Mutex<EventCache>>,
-    inner: Arc<T>,
-    ttl: Duration,
-}
-
-impl<T> CachedEventSource<T> {
-    /// Creates a new `CachedEventSource` from an inner `T` and a cache entry TTL.
-    pub fn new(inner: T, ttl: Duration) -> CachedEventSource<T> {
-        CachedEventSource {
-            cache: Arc::new(Mutex::new(EventCache::with_size(10))), // Size of 10 is plenty for our use case.
-            inner: Arc::new(inner),
-            ttl,
-        }
-    }
-
-    /// Creates a new `CachedEventSource` from an inner `T` and a cache configuration.
-    pub fn from_config(inner: T, config: &CalendarCacheConfig) -> CachedEventSource<T> {
-        let ttl_seconds = config.ttl_seconds.unwrap_or(10);
-
-        log::info!("creating event cache with TTL of {ttl_seconds}s");
-
-        CachedEventSource::new(inner, Duration::from_secs(ttl_seconds))
-    }
-}
-
-impl<T> CachedEventSource<T>
-where
-    T: EventSource + 'static,
-{
-    fn spawn_refresh_task(&self, key: CacheKey, range: Range<UtcDate>) {
-        let event_source = self.inner.clone();
-        let cache = self.cache.clone();
-        let ttl = self.ttl;
-
-        task::spawn(async move {
-            log::debug!("refreshing cache key `{:?}`", key);
-
-            match event_source.get_events(range).await {
-                Ok(events) => {
-                    let entry = CacheEntry::new(events, ttl);
-                    cache.lock().await.cache_set(key, entry);
-                }
-                Err(err) => {
-                    log::error!("failed to refresh cache key `{:?}`: {}", key, err);
-                }
-            }
-        });
-    }
-}
-
-#[async_trait]
-impl<T> EventSource for CachedEventSource<T>
-where
-    T: EventSource + 'static,
-{
-    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        let key = range.clone();
-
-        let mut cache = self.cache.lock().await;
-
-        match cache.cache_get_mut(&key) {
-            Some(entry) if entry.is_expired() => {
-                log::debug!("cache hit for `{:?}` (expiring)", key);
-
-                // Extend the lifetime of the expired entry by another TTL period before spawning
-                // the background refresh task. We do this to prevent other in-flight requests from
-                // triggering another refresh for this key while its background refresh task is
-                // still running.
-                entry.extend_lifetime(self.ttl);
-                self.spawn_refresh_task(key, range);
-                Ok(entry.value.clone())
-            }
-            Some(entry) => {
-                log::debug!("cache hit for `{:?}`", key);
-
-                Ok(entry.value.clone())
-            }
-            None => {
-                log::debug!("cache miss for `{:?}`, fetching events from source", key);
-
-                let events = self.inner.get_events(range.clone()).await?;
-                let entry = CacheEntry::new(events.clone(), self.ttl);
-                cache.cache_set(key, entry);
-                Ok(events)
-            }
-        }
+        Ok(events.0.into_iter().map(Into::into).collect())
     }
 }
 
@@ -238,8 +114,8 @@ impl<T> EventSource for Box<T>
 where
     T: EventSource + ?Sized,
 {
-    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        (**self).get_events(range).await
+    async fn fetch_events(&self) -> Result<Vec<Event>> {
+        (**self).fetch_events().await
     }
 }
 
@@ -248,14 +124,15 @@ impl<T> EventSource for Arc<T>
 where
     T: EventSource + ?Sized,
 {
-    async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        (**self).get_events(range).await
+    async fn fetch_events(&self) -> Result<Vec<Event>> {
+        (**self).fetch_events().await
     }
 }
 
 /// The `Calendar` type wraps an event source with additional functionality.
 pub struct Calendar {
     event_source: Box<dyn EventSource>,
+    events: Arc<Mutex<Vec<Event>>>,
 }
 
 impl Calendar {
@@ -266,6 +143,7 @@ impl Calendar {
     {
         Calendar {
             event_source: Box::new(event_source),
+            events: Default::default(),
         }
     }
 
@@ -276,18 +154,19 @@ impl Calendar {
             EventSourceKind::GoogleCalendar => Box::new(GoogleCalendarEventSource::new().await?),
         };
 
-        let calendar = if config.cache.enabled {
-            Calendar::new(CachedEventSource::from_config(event_source, &config.cache))
-        } else {
-            Calendar::new(event_source)
-        };
-
-        Ok(calendar)
+        Ok(Calendar::new(event_source))
     }
 
     /// Filters events between a start date (inclusive) and an end date (exclusive).
     pub async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
-        self.event_source.get_events(range).await
+        let events = self.events.lock().await.clone();
+
+        let events = events
+            .into_iter()
+            .filter(|event| range.contains(&event.date))
+            .collect();
+
+        Ok(events)
     }
 
     /// Builds an index of event year to list of events. This is used to avoid having complicated
@@ -305,6 +184,54 @@ impl Calendar {
 
         Ok(events_by_year)
     }
+
+    /// Synchronize events from the source into the calendar once.
+    pub async fn sync_once(&self) -> Result<()> {
+        log::debug!("synchronizing calendar events");
+        let mut events = self.event_source.fetch_events().await?;
+        // Ensure events are always sorted by date.
+        events.sort_by_key(|event| event.date);
+        *self.events.lock().await = events;
+        Ok(())
+    }
+
+    /// Starts to periodically sync the calendar every `interval`. Syncing can be stopped by
+    /// sending a message to the `cancel` channel.
+    pub async fn start_sync(&self, period: Duration, mut stop: Receiver<()>) -> Result<()> {
+        log::info!("synchronizing calendar events every {:?}", period);
+        let mut interval = tokio::time::interval(period);
+
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    if let Err(err) = self.sync_once().await {
+                        log::error!("failed to sync calendar events: {err}");
+                    }
+                }
+                _ = &mut stop => {
+                    log::info!("stopping calendar sync");
+                    return Ok(());
+                }
+            }
+        }
+    }
+}
+
+/// Starts a background task to sync calendar events. Returns a `Sender` to stop the sync and a
+/// `Receiver` to get signalled when the sync is stopped.
+pub async fn spawn_sync_task(
+    calendar: Arc<Calendar>,
+    period: Duration,
+) -> (Sender<()>, Receiver<()>) {
+    let (stop_tx, stop_rx) = oneshot::channel();
+    let (done_tx, done_rx) = oneshot::channel();
+
+    tokio::spawn(async move {
+        let _ = calendar.start_sync(period, stop_rx).await;
+        let _ = done_tx.send(());
+    });
+
+    (stop_tx, done_rx)
 }
 
 /// Serializes a date as `%e. %B` using german as locale, e.g. `13. Dezember`. This is used by
@@ -351,6 +278,7 @@ mod tests {
             event!("d", 2023, 1, 2),
             event!("e", 2023, 1, 1),
         ]));
+        calendar.sync_once().await.unwrap();
 
         assert_eq!(
             calendar
@@ -381,6 +309,7 @@ mod tests {
             event!("d", 2023, 1, 2),
             event!("e", 2023, 1, 1),
         ]));
+        calendar.sync_once().await.unwrap();
 
         let expected = indexmap! {
             2022 => vec![
@@ -404,56 +333,58 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn cached_event_source() {
-        // A fake `EventSource` which just counts invocations of `get_events` and returns a fake
+    async fn calendar_sync() {
+        // A fake `EventSource` which just counts invocations of `fetch_events` and returns a fake
         // event.
         struct Counter(AtomicUsize);
 
         #[async_trait]
         impl EventSource for Counter {
-            async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+            async fn fetch_events(&self) -> Result<Vec<Event>> {
                 self.0.fetch_add(1, Ordering::SeqCst);
                 Ok(vec![Event {
                     title: "event".into(),
-                    date: range.start.clone(),
+                    date: date!(2023, 1, 1),
                 }])
             }
         }
 
         let counter = Arc::new(Counter(AtomicUsize::new(0)));
 
-        let es = CachedEventSource::new(counter.clone(), Duration::from_millis(100));
-        let range1 = date!(2022, 1, 1)..date!(2022, 1, 2);
-        let range2 = date!(2022, 1, 2)..date!(2022, 1, 3);
+        let calendar = Arc::new(Calendar::new(counter.clone()));
+
+        let range1 = date!(2023, 1, 1)..date!(2023, 1, 2);
+        let range2 = date!(2023, 1, 2)..date!(2023, 1, 3);
+
+        // Initially, there are no events because no sync happened.
+        assert_eq!(calendar.get_events(range1.clone()).await.unwrap(), vec![]);
+
+        calendar.sync_once().await.unwrap();
 
         assert_eq!(
-            es.get_events(range1.clone()).await.unwrap(),
-            vec![event!("event", 2022, 1, 1)]
+            calendar.get_events(range1.clone()).await.unwrap(),
+            vec![event!("event", 2023, 1, 1)]
         );
 
-        assert_eq!(
-            es.get_events(range2.clone()).await.unwrap(),
-            vec![event!("event", 2022, 1, 2)]
-        );
+        // No events in range.
+        assert_eq!(calendar.get_events(range2.clone()).await.unwrap(), vec![]);
 
-        // This call is cached.
-        assert_eq!(
-            es.get_events(range1.clone()).await.unwrap(),
-            vec![event!("event", 2022, 1, 1)]
-        );
+        // We only fetched the events once from the source.
+        assert_eq!(counter.0.load(Ordering::Relaxed), 1);
 
-        assert_eq!(counter.0.load(Ordering::Relaxed), 2);
+        let (stop_tx, _done_rx) = spawn_sync_task(calendar, Duration::from_millis(10)).await;
 
-        // Let the cache expire.
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(15)).await;
 
-        // These calls trigger a background cache refresh, because the cache expired.
-        es.get_events(range2).await.unwrap();
-        es.get_events(range1).await.unwrap();
+        // Stop the sync again.
+        stop_tx.send(()).unwrap();
 
-        // Give the background tasks some time to finish.
-        tokio::time::sleep(Duration::from_millis(50)).await;
+        // Manual `sync_one` above + initial sync + sync after 10ms = 3 syncs.
+        assert_eq!(counter.0.load(Ordering::Relaxed), 3);
 
-        assert_eq!(counter.0.load(Ordering::Relaxed), 4);
+        tokio::time::sleep(Duration::from_millis(15)).await;
+
+        // Since sync is stopped, counter should not increase.
+        assert_eq!(counter.0.load(Ordering::Relaxed), 3);
     }
 }
