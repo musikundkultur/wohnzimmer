@@ -92,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = AppConfig::load()?;
 
-    let calendar = Calendar::from_config(&config.calendar)?;
+    let calendar = Calendar::from_config(&config.calendar).await?;
 
     if config.server.template_autoreload {
         log::info!("template auto-reloading is enabled");
