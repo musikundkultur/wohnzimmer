@@ -35,6 +35,46 @@ The log level can be configured via the `RUST_LOG` environment variable.
 Examples can be found in then [`env_logger`
 documentation](https://docs.rs/env_logger/latest/env_logger/).
 
+### Google Calendar Integration
+
+Upcoming events can be pulled from a Google Calendar. To enable the
+integration, enable the `google-calendar` event source in the configuration:
+
+```toml
+[calendar]
+event_source = "google-calendar"
+```
+
+Furthermore, the following two environment variables need to be set to
+appropriate values:
+
+- `GOOGLE_CALENDAR_ID`: The ID of the calendar. You can find it in the
+  **Integrate calendar** section of your calendar's settings.
+- `GOOGLE_APPLICATION_CREDENTIALS_JSON`: Populate it with the base64 encoded
+  JSON Service Account Credentials obtained from the Google Cloud Console (see
+  below).
+
+#### Calendar Setup
+
+1. Create a new project in the [Google Cloud
+   Console](https://console.cloud.google.com/) or use an existing one.
+2. Enable the Google Calendar API via the [API
+   Library](https://console.cloud.google.com/apis/library).
+3. Create a new Service Account via the [IAM
+   Console](https://console.cloud.google.com/iam-admin/serviceaccounts).
+4. Create new credentials for this Service Account by navigating to the
+   **Keys** tab and then select **Add key** => **Create new key** => Choose
+   **JSON** as key type. Save the downloaded JSON credentials file.
+5. Store the credentials in the `GOOGLE_APPLICATION_CREDENTIALS_JSON`
+   environment variable:
+
+   ```sh
+   export GOOGLE_APPLICATION_CREDENTIALS_JSON="$(base64 --wrap=0 credentials.json)"
+   ```
+6. Navigate to your Google Calendar's settings and share it with the Service
+   Account's email address. Read permissions are sufficient for the integration
+   to work.
+
 ## Release process
 
 This project uses
@@ -86,6 +126,6 @@ flyctl deploy
 ## License
 
 The source code of wohnzimmer is licensed under either of [Apache License,
-Version 2.0](LICENSE-APACHE.md) or [MIT license](LICENSE-MIT) at your option.
+Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
 
 The Lato font is licensed under the [Open Font License](static/fonts/lato/OFL.txt).
