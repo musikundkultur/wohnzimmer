@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.4.1...v0.5.0) (2023-03-22)
+
+
+### Features
+
+* **calendar:** switch to periodic sync ([#48](https://github.com/musikundkultur/wohnzimmer/issues/48)) ([c868617](https://github.com/musikundkultur/wohnzimmer/commit/c8686179b40c8e3f20a40b807f7577eab7f2ed8b))
+
+
+### Miscellaneous
+
+* **deps:** bump google-cloud-auth from 0.6.1 to 0.9.1 ([#46](https://github.com/musikundkultur/wohnzimmer/issues/46)) ([cb6c558](https://github.com/musikundkultur/wohnzimmer/commit/cb6c5589df98bf986fe142ec6e28100a38d52e8e))
+
 ## [0.4.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.4.0...v0.4.1) (2023-03-22)
 
 
