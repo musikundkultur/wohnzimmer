@@ -13,10 +13,9 @@ use actix_web_lab::respond::Html;
 use chrono::{Duration, DurationRound, Months, Utc};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
-use std::sync::Arc;
 use tokio::time;
 use wohnzimmer::{
-    calendar::{self, Calendar, EventsByYear},
+    calendar::{Calendar, EventsByYear},
     AppConfig,
 };
 
@@ -94,10 +93,10 @@ async fn main() -> anyhow::Result<()> {
 
     let config = AppConfig::load()?;
 
-    let calendar = Arc::new(Calendar::from_config(&config.calendar).await?);
+    let calendar = Calendar::from_config(&config.calendar).await?;
 
     let period = time::Duration::from_secs(config.calendar.sync_period_seconds.unwrap_or(60));
-    let (stop_tx, done_rx) = calendar::spawn_sync_task(calendar.clone(), period).await;
+    let sync_task_handle = calendar.spawn_sync_task(period).await;
 
     if config.server.template_autoreload {
         log::info!("template auto-reloading is enabled");
@@ -123,7 +122,7 @@ async fn main() -> anyhow::Result<()> {
         Ok(env)
     });
 
-    let calendar = Data::from(calendar);
+    let calendar = Data::new(calendar);
     let tmpl_reloader = Data::new(tmpl_reloader);
 
     log::info!("starting HTTP server at {}", config.server.listen_addr);
@@ -150,16 +149,7 @@ async fn main() -> anyhow::Result<()> {
     .run()
     .await?;
 
-    // Graceful shutdown of calendar sync.
-    match stop_tx.send(()) {
-        Ok(_) => {
-            // Wait for the calendar sync to be stopped.
-            let _ = done_rx.await;
-        }
-        Err(_) => {
-            log::error!("failed to stop calendar sync");
-        }
-    }
+    sync_task_handle.stop().await?;
 
     Ok(())
 }

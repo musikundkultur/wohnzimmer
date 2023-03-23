@@ -7,10 +7,12 @@ use chrono::{DateTime, Datelike, Locale, Months, Utc};
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
+use std::io;
 use std::ops::Range;
 use std::sync::Arc;
 use tokio::sync::oneshot::{self, Receiver, Sender};
 use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 use tokio::time::Duration;
 
 /// Type alias for a date represented in UTC.
@@ -130,8 +132,9 @@ where
 }
 
 /// The `Calendar` type wraps an event source with additional functionality.
+#[derive(Clone)]
 pub struct Calendar {
-    event_source: Box<dyn EventSource>,
+    event_source: Arc<dyn EventSource>,
     events: Arc<Mutex<Vec<Event>>>,
 }
 
@@ -142,7 +145,7 @@ impl Calendar {
         T: EventSource + 'static,
     {
         Calendar {
-            event_source: Box::new(event_source),
+            event_source: Arc::new(event_source),
             events: Default::default(),
         }
     }
@@ -215,23 +218,39 @@ impl Calendar {
             }
         }
     }
+
+    /// Starts a background task to sync calendar events. Returns a `SyncTaskHandle` to stop the
+    /// sync.
+    pub async fn spawn_sync_task(&self, period: Duration) -> SyncTaskHandle {
+        let calendar = self.clone();
+        let (stop_tx, stop_rx) = oneshot::channel();
+
+        let join_handle = tokio::spawn(async move {
+            let _ = calendar.start_sync(period, stop_rx).await;
+        });
+
+        SyncTaskHandle {
+            join_handle,
+            stop_tx,
+        }
+    }
 }
 
-/// Starts a background task to sync calendar events. Returns a `Sender` to stop the sync and a
-/// `Receiver` to get signalled when the sync is stopped.
-pub async fn spawn_sync_task(
-    calendar: Arc<Calendar>,
-    period: Duration,
-) -> (Sender<()>, Receiver<()>) {
-    let (stop_tx, stop_rx) = oneshot::channel();
-    let (done_tx, done_rx) = oneshot::channel();
+/// A handle for stopping a calendar sync task.
+pub struct SyncTaskHandle {
+    join_handle: JoinHandle<()>,
+    stop_tx: Sender<()>,
+}
 
-    tokio::spawn(async move {
-        let _ = calendar.start_sync(period, stop_rx).await;
-        let _ = done_tx.send(());
-    });
+impl SyncTaskHandle {
+    /// Stops the calendar sync task. Blocks until the background task is finished.
+    pub async fn stop(self) -> io::Result<()> {
+        if let Ok(_) = self.stop_tx.send(()) {
+            self.join_handle.await?;
+        }
 
-    (stop_tx, done_rx)
+        Ok(())
+    }
 }
 
 /// Serializes a date as `%e. %B` using german as locale, e.g. `13. Dezember`. This is used by
@@ -372,12 +391,12 @@ mod tests {
         // We only fetched the events once from the source.
         assert_eq!(counter.0.load(Ordering::Relaxed), 1);
 
-        let (stop_tx, _done_rx) = spawn_sync_task(calendar, Duration::from_millis(10)).await;
+        let sync_task_handle = calendar.spawn_sync_task(Duration::from_millis(10)).await;
 
         tokio::time::sleep(Duration::from_millis(15)).await;
 
         // Stop the sync again.
-        stop_tx.send(()).unwrap();
+        sync_task_handle.stop().await.unwrap();
 
         // Manual `sync_one` above + initial sync + sync after 10ms = 3 syncs.
         assert_eq!(counter.0.load(Ordering::Relaxed), 3);
