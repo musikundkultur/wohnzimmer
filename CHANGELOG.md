@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.5.1...v0.5.2) (2023-03-23)
+
+
+### Bug Fixes
+
+* **calendar:** make `Calendar::start_sync` private ([a7bdd38](https://github.com/musikundkultur/wohnzimmer/commit/a7bdd385093960763b6eac1634bb1ce4c0217f99))
+* **calendar:** remove unnecessary `Result` wrapping ([60fdb25](https://github.com/musikundkultur/wohnzimmer/commit/60fdb25f37da630fb4446221ecbddf6ce6b24ca3))
+
 ## [0.5.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.5.0...v0.5.1) (2023-03-22)
 
 
