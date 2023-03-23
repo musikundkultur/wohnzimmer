@@ -198,9 +198,9 @@ impl Calendar {
         Ok(())
     }
 
-    /// Starts to periodically sync the calendar every `interval`. Syncing can be stopped by
-    /// sending a message to the `cancel` channel.
-    pub async fn start_sync(&self, period: Duration, mut stop: Receiver<()>) -> Result<()> {
+    /// Starts to periodically sync the calendar every `interval` until a message is received via
+    /// `stop`.
+    async fn start_sync(&self, period: Duration, mut stop: Receiver<()>) -> Result<()> {
         log::info!("synchronizing calendar events every {:?}", period);
         let mut interval = tokio::time::interval(period);
 
