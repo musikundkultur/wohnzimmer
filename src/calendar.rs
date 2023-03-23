@@ -200,7 +200,7 @@ impl Calendar {
 
     /// Starts to periodically sync the calendar every `interval` until a message is received via
     /// `stop`.
-    async fn start_sync(&self, period: Duration, mut stop: Receiver<()>) -> Result<()> {
+    async fn start_sync(&self, period: Duration, mut stop: Receiver<()>) {
         log::info!("synchronizing calendar events every {:?}", period);
         let mut interval = tokio::time::interval(period);
 
@@ -213,7 +213,7 @@ impl Calendar {
                 }
                 _ = &mut stop => {
                     log::info!("stopping calendar sync");
-                    return Ok(());
+                    return;
                 }
             }
         }
@@ -226,7 +226,7 @@ impl Calendar {
         let (stop_tx, stop_rx) = oneshot::channel();
 
         let join_handle = tokio::spawn(async move {
-            let _ = calendar.start_sync(period, stop_rx).await;
+            calendar.start_sync(period, stop_rx).await;
         });
 
         SyncTaskHandle {
