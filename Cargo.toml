@@ -17,7 +17,7 @@ actix-web = "4"
 actix-web-lab = "0.18"
 actix-utils = "3"
 anyhow = "1.0.66"
-async-trait = "0.1.64"
+async-trait = "0.1.68"
 config = { version = "0.13.3", default-features = false, features = ["toml"] }
 chrono = { version = "0.4.23", default-features = false, features = ["clock", "serde", "std", "unstable-locales"] }
 chrono-tz = "0.8.1"
