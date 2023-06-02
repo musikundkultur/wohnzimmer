@@ -1299,6 +1299,15 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c758712a3652a2ce74855bf49af7b6684f089497c21a0d394f43c69464f858bf"
 dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "minijinja"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75aa91cba87dcad6af3e53bc7adb9c99755eba2d49b6c5f10dbcc79d4727c1bd"
+dependencies = [
  "memo-map",
  "self_cell",
  "serde",
@@ -1310,7 +1319,7 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b0d6051a37d16598bda1e606d8968ca7356ca584924810f5515f5b1d4fb83c2"
 dependencies = [
- "minijinja",
+ "minijinja 0.27.0",
  "notify",
 ]
 
@@ -1830,9 +1839,9 @@ dependencies = [
 
 [[package]]
 name = "self_cell"
-version = "0.10.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ef965a420fe14fdac7dd018862966a4c14094f900e1650bbc71ddd7d580c8af"
+checksum = "4a3926e239738d36060909ffe6f511502f92149a45a1fade7fe031cb2d33e88b"
 
 [[package]]
 name = "semver"
@@ -2593,7 +2602,7 @@ dependencies = [
  "google-cloud-token",
  "indexmap",
  "log",
- "minijinja",
+ "minijinja 0.34.0",
  "minijinja-autoreload",
  "reqwest",
  "reqwest-middleware",
