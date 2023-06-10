@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.0...v0.6.1) (2023-06-10)
+
+
+### Bug Fixes
+
+* **events:** handle absence of events in template ([a18f58d](https://github.com/musikundkultur/wohnzimmer/commit/a18f58d7666864492f4fe7e5afa2e1bd2d8b9990))
+
 ## [0.6.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.5.2...v0.6.0) (2023-06-10)
 
 
