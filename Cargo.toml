@@ -25,7 +25,7 @@ env_logger = "0.10"
 indexmap = { version = "1.9.3", features = ["serde"] }
 log = "0.4"
 minijinja = { version = "0.34", features = ["source"] }
-minijinja-autoreload = "0.27"
+minijinja-autoreload = "0.34"
 serde = { version = "1.0.163", features = ["derive"] }
 thiserror = "1.0.38"
 serde_json = "1"
