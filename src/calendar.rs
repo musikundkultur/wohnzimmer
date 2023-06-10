@@ -3,7 +3,7 @@ pub mod google;
 use super::Result;
 use crate::CalendarConfig;
 use async_trait::async_trait;
-use chrono::{DateTime, Datelike, Locale, Months, Utc};
+use chrono::{DateTime, Datelike, DurationRound, Locale, Months, Utc};
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -98,13 +98,14 @@ impl From<google::models::Event> for Event {
 #[async_trait]
 impl EventSource for GoogleCalendarEventSource {
     async fn fetch_events(&self) -> Result<Vec<Event>> {
-        let now = Utc::now();
-        let one_month_ago = now - Months::new(1);
-        let in_six_months = now + Months::new(6);
+        let now = Utc::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
+        let in_twelve_months = now + Months::new(12);
 
         let events = self
             .client
-            .get_events(Some(one_month_ago..in_six_months), None, None)
+            .get_events(Some(now..in_twelve_months), None, None)
             .await?;
 
         Ok(events.0.into_iter().map(Into::into).collect())
