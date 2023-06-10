@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.5.2...v0.6.0) (2023-06-10)
+
+
+### Features
+
+* add `events` page and limit event display on homepage ([#69](https://github.com/musikundkultur/wohnzimmer/issues/69)) ([a0e8d16](https://github.com/musikundkultur/wohnzimmer/commit/a0e8d16a7a976b22a9856bfb331a414d00782946))
+
+
+### Miscellaneous
+
+* **deps:** bump actions/cache from 3.2.6 to 3.3.1 ([#51](https://github.com/musikundkultur/wohnzimmer/issues/51)) ([d5cbe06](https://github.com/musikundkultur/wohnzimmer/commit/d5cbe06ae341cbf6b6d29a3b20de522e64ae7a87))
+* **deps:** bump async-trait from 0.1.67 to 0.1.68 ([#53](https://github.com/musikundkultur/wohnzimmer/issues/53)) ([00ee677](https://github.com/musikundkultur/wohnzimmer/commit/00ee677a169399bdc68af3d4328d6f0dbd42443d))
+* **deps:** bump google-cloud-auth from 0.9.1 to 0.9.2 ([#59](https://github.com/musikundkultur/wohnzimmer/issues/59)) ([a96d09e](https://github.com/musikundkultur/wohnzimmer/commit/a96d09e0fa0463367cc6f906225d6e7853b07734))
+* **deps:** bump indexmap from 1.9.2 to 1.9.3 ([#52](https://github.com/musikundkultur/wohnzimmer/issues/52)) ([2a0c915](https://github.com/musikundkultur/wohnzimmer/commit/2a0c9155da1d3d34b6ce2cdde93b29c69148b890))
+* **deps:** bump minijinja from 0.27.0 to 0.34.0 ([#68](https://github.com/musikundkultur/wohnzimmer/issues/68)) ([97d22f0](https://github.com/musikundkultur/wohnzimmer/commit/97d22f0df766e9cc5d145066f1ac8308526248e4))
+* **deps:** bump serde from 1.0.158 to 1.0.159 ([#56](https://github.com/musikundkultur/wohnzimmer/issues/56)) ([7c1977d](https://github.com/musikundkultur/wohnzimmer/commit/7c1977d4c36bd9a2e25a282353cf403c4df9a8f5))
+* **deps:** bump serde from 1.0.159 to 1.0.163 ([#64](https://github.com/musikundkultur/wohnzimmer/issues/64)) ([98cdd51](https://github.com/musikundkultur/wohnzimmer/commit/98cdd51835fcf49c85522f564f784a68c5dce9cc))
+* **deps:** bump serde_json from 1.0.94 to 1.0.95 ([#54](https://github.com/musikundkultur/wohnzimmer/issues/54)) ([ff091d9](https://github.com/musikundkultur/wohnzimmer/commit/ff091d97b7b01281c332ab3a12992c59c4457b92))
+* **deps:** bump tokio from 1.26.0 to 1.28.2 ([#66](https://github.com/musikundkultur/wohnzimmer/issues/66)) ([828d4e0](https://github.com/musikundkultur/wohnzimmer/commit/828d4e0d5b670d418dc2ccc0943057534e91a7d1))
+
 ## [0.5.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.5.1...v0.5.2) (2023-03-23)
 
 
