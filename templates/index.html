@@ -9,7 +9,9 @@
 {% endblock %}
 
 {% block after_events %}
+{% if events_by_year %}
 <p>
   <a href="/events">Alle Termine</a>
 </p>
+{% endif %}
 {% endblock %}

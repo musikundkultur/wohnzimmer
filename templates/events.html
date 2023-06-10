@@ -5,6 +5,7 @@
 {% block content %}
   {% block before_events %}{% endblock %}
   <div class="events">
+    {% if events_by_year %}
     {% for year, events in events_by_year | items %}
     <h3>Termine {{ year }}</h3>
     <table summary="Termine {{ year }}">
@@ -16,6 +17,10 @@
       {% endfor %}
     </table>
     {% endfor %}
+    {% else %}
+    <h3>Termine</h3>
+    <p>Momentan steht nichts an.</p>
+    {% endif %}
   </div>
   {% block after_events %}{% endblock %}
 {% endblock %}
