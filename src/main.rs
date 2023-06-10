@@ -50,21 +50,18 @@ impl FromRequest for MiniJinjaRenderer {
     }
 }
 
-#[route("/", method = "GET", method = "HEAD")]
-async fn index(
+async fn render_events(
     req: HttpRequest,
     tmpl_env: MiniJinjaRenderer,
+    tmpl: &str,
     calendar: Data<Calendar>,
+    months: u32,
 ) -> Result<impl Responder> {
-    // We truncate the time from the date. This makes caching easier and is generally more what we
-    // want since we're calculating with full days anyways. The unwrap here cannot fail.
     let now = Utc::now().duration_trunc(Duration::days(1)).unwrap();
-
-    let one_month_ago = now - Months::new(1);
-    let in_six_months = now + Months::new(6);
+    let end = now + Months::new(months);
 
     let events_by_year = calendar
-        .get_events_by_year(one_month_ago..in_six_months)
+        .get_events_by_year(now..end)
         .await
         .unwrap_or_else(|err| {
             // Handle this error gracefully by just displaying no events instead of sending a 500
@@ -74,9 +71,30 @@ async fn index(
         });
 
     tmpl_env.render(
-        "index.html",
-        minijinja::context! { request_path => req.uri().path(), events_by_year },
+        tmpl,
+        minijinja::context! {
+            request_path => req.uri().path(),
+            events_by_year
+        },
     )
+}
+
+#[route("/", method = "GET", method = "HEAD")]
+async fn index(
+    req: HttpRequest,
+    tmpl_env: MiniJinjaRenderer,
+    calendar: Data<Calendar>,
+) -> Result<impl Responder> {
+    render_events(req, tmpl_env, "index.html", calendar, 3).await
+}
+
+#[route("/events", method = "GET", method = "HEAD")]
+async fn events(
+    req: HttpRequest,
+    tmpl_env: MiniJinjaRenderer,
+    calendar: Data<Calendar>,
+) -> Result<impl Responder> {
+    render_events(req, tmpl_env, "events.html", calendar, 12).await
 }
 
 #[route("/impressum", method = "GET", method = "HEAD")]
@@ -132,6 +150,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(calendar.clone())
             .app_data(tmpl_reloader.clone())
             .service(imprint)
+            .service(events)
             .service(index)
             .service(Files::new("/static", "./static"))
             .wrap(

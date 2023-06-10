@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block body_class %}events{% endblock %}
+
+{% block content %}
+  {% block before_events %}{% endblock %}
+  <div class="events">
+    {% for year, events in events_by_year | items %}
+    <h3>Termine {{ year }}</h3>
+    <table summary="Termine {{ year }}">
+      {% for event in events %}
+      <tr>
+        <th>{{ event.date }}</th>
+        <td>{{ event.title }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endfor %}
+  </div>
+  {% block after_events %}{% endblock %}
+{% endblock %}
