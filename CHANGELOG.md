@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.2...v0.6.3) (2023-06-11)
+
+
+### Miscellaneous
+
+* **dependabot:** configure docker dependency updates ([1e05f48](https://github.com/musikundkultur/wohnzimmer/commit/1e05f4847c7e38d7424f80ef8251e5bc9b8d7e08))
+* **deps:** bump anyhow from 1.0.70 to 1.0.71 ([#74](https://github.com/musikundkultur/wohnzimmer/issues/74)) ([f7396c0](https://github.com/musikundkultur/wohnzimmer/commit/f7396c0c6ec5befeed8abe7137ab13d3f388012e))
+* **deps:** bump lukemathwalker/cargo-chef ([#72](https://github.com/musikundkultur/wohnzimmer/issues/72)) ([ba153e4](https://github.com/musikundkultur/wohnzimmer/commit/ba153e4c28f8d3356822989b10da31dcf56719f6))
+* **deps:** bump reqwest from 0.11.15 to 0.11.18 ([#78](https://github.com/musikundkultur/wohnzimmer/issues/78)) ([86a8489](https://github.com/musikundkultur/wohnzimmer/commit/86a8489a901692723065a4bf973a93a27e3d2b90))
+* **deps:** bump reqwest-middleware from 0.2.1 to 0.2.2 ([#77](https://github.com/musikundkultur/wohnzimmer/issues/77)) ([ef0a0e3](https://github.com/musikundkultur/wohnzimmer/commit/ef0a0e36cba16fd468645781948dada587426edc))
+* **deps:** bump serde from 1.0.163 to 1.0.164 ([#76](https://github.com/musikundkultur/wohnzimmer/issues/76)) ([59bb124](https://github.com/musikundkultur/wohnzimmer/commit/59bb124be3a29b6d0617a545a55f7ff3967e2210))
+* **deps:** bump serde_json from 1.0.95 to 1.0.96 ([#75](https://github.com/musikundkultur/wohnzimmer/issues/75)) ([e487acb](https://github.com/musikundkultur/wohnzimmer/commit/e487acb306b0fd37f0710debe8688017ace2f9db))
+
 ## [0.6.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.1...v0.6.2) (2023-06-11)
 
 
