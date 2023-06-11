@@ -42,7 +42,7 @@ body {
   font-family: Lato, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5em;
-  text-align: center;
+  text-align: justify;
 }
 
 a {
@@ -170,7 +170,7 @@ a:hover {
   margin-right: auto;
   margin-top: 0;
   text-align: center;
-  width: 360px;
+  width: 350px;
 }
 
 .content .events table {
@@ -216,40 +216,19 @@ a:hover {
 }
 
 /*---------------------*/
-/* BOXED PAGE STYLE
+/* INDEX PAGE STYLE
 /*---------------------*/
-body.boxed {
-  background-color: #a87;
-  color: #000000;
-}
-
-body.boxed .container {
-  -webkit-box-shadow: 0 0 15px rgb(0 0 0);
-  -moz-box-shadow: 0 0 15px rgb(0, 0, 0);
-  box-shadow: 0 0 15px rgb(0 0 0);
-  background-color: #000000;
-}
-
-body.boxed .content {
-  background-color: #f0e8d1;
-  margin-top: 35px;
-  margin-bottom: 0px;
-  padding: 20px 30px;
-  position: relative;
-  text-align: left;
-}
-
-body.boxed .content a {
-  color: #660000;
-}
-
-body.boxed .footer {
-  text-align: right;
+body.index {
+  text-align: center;
 }
 
 /*---------------------*/
 /* ERROR PAGE STYLE
 /*---------------------*/
+body.error {
+  text-align: center;
+}
+
 body.error .header h1:before,
 body.error .header h1:after,
 body.error .header h2 {
@@ -279,6 +258,7 @@ body.error .header h2 {
 @media only screen and (max-width: 767px) {
   .container {
     width: auto;
+    margin: 0 20px;
   }
 
   .header h1:before,
