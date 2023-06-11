@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.1...v0.6.2) (2023-06-11)
+
+
+### Bug Fixes
+
+* remove `boxed` page style ([a9dd7c4](https://github.com/musikundkultur/wohnzimmer/commit/a9dd7c4c88bb10c7127d802c2040d24fdc66338f))
+
 ## [0.6.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.0...v0.6.1) (2023-06-10)
 
 
