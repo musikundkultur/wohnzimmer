@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.4](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.3...v0.6.4) (2023-07-17)
+
+
+### Miscellaneous
+
+* **deps:** bump actix-web-lab from 0.18.9 to 0.19.1 ([#79](https://github.com/musikundkultur/wohnzimmer/issues/79)) ([2245626](https://github.com/musikundkultur/wohnzimmer/commit/2245626d04735563d4d62695ca2677289ba7be6d))
+* **deps:** bump google-cloud-auth from 0.9.2 to 0.11.0 ([#82](https://github.com/musikundkultur/wohnzimmer/issues/82)) ([097c3ba](https://github.com/musikundkultur/wohnzimmer/commit/097c3ba219365dea0b73c55c20c9c8de27acf1b3))
+* **deps:** bump h2 from 0.3.16 to 0.3.20 ([c3162db](https://github.com/musikundkultur/wohnzimmer/commit/c3162db605afc7bd6904df88167ca7acf8dc94c8))
+* **deps:** bump log from 0.4.17 to 0.4.19 ([#81](https://github.com/musikundkultur/wohnzimmer/issues/81)) ([f4bc8c9](https://github.com/musikundkultur/wohnzimmer/commit/f4bc8c9ff5888fa90f22abf759202f23420810f6))
+* **deps:** bump minijinja from 0.34.0 to 1.0.4 ([1093f05](https://github.com/musikundkultur/wohnzimmer/commit/1093f0585143c25d844ef7f9edb8888eda838826))
+* **deps:** bump openssl from 0.10.47 to 0.10.55 ([705bc01](https://github.com/musikundkultur/wohnzimmer/commit/705bc01a078114a97600ae18f4d0e658cabf580b))
+* **deps:** bump proc-macro2 from 1.0.52 to 1.0.66 ([e3a70bf](https://github.com/musikundkultur/wohnzimmer/commit/e3a70bfc3171d7d2989db2097bc0d575d3e1cee0))
+* **deps:** bump tokio from 1.28.2 to 1.29.1 ([#80](https://github.com/musikundkultur/wohnzimmer/issues/80)) ([0a0f17e](https://github.com/musikundkultur/wohnzimmer/commit/0a0f17e9bfe1faa0095ec8b7680766fbf8af1dac))
+
 ## [0.6.3](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.2...v0.6.3) (2023-06-11)
 
 
