@@ -1,6 +1,6 @@
 [package]
 name = "wohnzimmer"
-version = "0.6.3"
+version = "0.6.4"
 publish = false
 authors = ["Alhambra Luckenwalde <github@alhambra-luckenwalde.de>"]
 license = "MIT OR Apache-2.0"
