@@ -1346,12 +1346,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "minijinja-autoreload"
-version = "0.34.0"
+name = "minijinja"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acaa6f43db8f36a1153358a25bf904a10c569365f1a1aebbd661e0e1461cf91"
+checksum = "822ebf53abf914648234330ca59b88226ed278551b1b42b47e472957c12660d6"
 dependencies = [
- "minijinja",
+ "serde",
+]
+
+[[package]]
+name = "minijinja-autoreload"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc3c1e0fe1a3a8a88778f4d9624514c35529813b73d2780d832b08fd13fb0799"
+dependencies = [
+ "minijinja 1.0.4",
  "notify",
 ]
 
@@ -2649,7 +2658,7 @@ dependencies = [
  "google-cloud-token",
  "indexmap 1.9.3",
  "log",
- "minijinja",
+ "minijinja 0.34.0",
  "minijinja-autoreload",
  "reqwest",
  "reqwest-middleware",
