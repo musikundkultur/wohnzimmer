@@ -135,7 +135,7 @@ async fn main() -> anyhow::Result<()> {
             notifier.watch_path("./templates", true);
         }
 
-        env.set_source(minijinja::Source::from_path("./templates"));
+        env.set_loader(minijinja::path_loader("./templates"));
 
         Ok(env)
     });
