@@ -106,6 +106,7 @@ impl GoogleCalendarClient {
         let config = google_cloud_auth::project::Config {
             audience: None,
             scopes: Some(&scopes),
+            sub: None,
         };
 
         let token_source = DefaultTokenSourceProvider::new(config)
