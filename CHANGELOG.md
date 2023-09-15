@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.5](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.4...v0.6.5) (2023-09-15)
+
+
+### Miscellaneous
+
+* **deps:** bump anyhow from 1.0.71 to 1.0.75 ([#92](https://github.com/musikundkultur/wohnzimmer/issues/92)) ([2299d0e](https://github.com/musikundkultur/wohnzimmer/commit/2299d0e30c1dd81e07286a62498880abb4f53b3e))
+* **deps:** bump chrono-tz from 0.8.1 to 0.8.3 ([#88](https://github.com/musikundkultur/wohnzimmer/issues/88)) ([041604d](https://github.com/musikundkultur/wohnzimmer/commit/041604d919ecf02f1b1bb43da11671e88a76dbe8))
+* **deps:** bump lukemathwalker/cargo-chef ([#94](https://github.com/musikundkultur/wohnzimmer/issues/94)) ([615a728](https://github.com/musikundkultur/wohnzimmer/commit/615a728ca0ee0e9b7e6ad393460d382bb9021032))
+* **deps:** bump minijinja from 1.0.4 to 1.0.7 ([#96](https://github.com/musikundkultur/wohnzimmer/issues/96)) ([a866e3c](https://github.com/musikundkultur/wohnzimmer/commit/a866e3c61ffd0f820765da0e85db4ac045c69b19))
+* **deps:** bump serde_json from 1.0.96 to 1.0.107 ([#98](https://github.com/musikundkultur/wohnzimmer/issues/98)) ([f220bb6](https://github.com/musikundkultur/wohnzimmer/commit/f220bb6f6707cb85b413c45042ceca3f2fd6300c))
+* **deps:** bump thiserror from 1.0.40 to 1.0.47 ([#95](https://github.com/musikundkultur/wohnzimmer/issues/95)) ([a70d01b](https://github.com/musikundkultur/wohnzimmer/commit/a70d01b6a21de39fc9993c8ac6cd7c306704604e))
+
 ## [0.6.4](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.3...v0.6.4) (2023-07-17)
 
 
