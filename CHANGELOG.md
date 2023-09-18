@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.6](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.5...v0.6.6) (2023-09-18)
+
+
+### Bug Fixes
+
+* **docker:** switch to debian bookworm base image ([6ed5e44](https://github.com/musikundkultur/wohnzimmer/commit/6ed5e4448f367d5f31d053de39cf065603f000c8))
+
+
+### Miscellaneous
+
+* **deploy:** switch to bluegreen strategy ([bcd6d61](https://github.com/musikundkultur/wohnzimmer/commit/bcd6d61d814c170588110ac073b5bec2c909e18f))
+
 ## [0.6.5](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.4...v0.6.5) (2023-09-15)
 
 
