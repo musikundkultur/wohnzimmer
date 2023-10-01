@@ -37,7 +37,7 @@ jobs:
       IMAGE_TAG: ${{ needs.release-please.outputs.release_tag || github.ref_name }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.IMAGE_TAG }}
 
@@ -72,7 +72,7 @@ jobs:
       IMAGE_TAG: ${{ needs.release-please.outputs.release_tag || github.ref_name }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.IMAGE_TAG }}
 
