@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.7](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.6...v0.6.7) (2023-11-07)
+
+
+### Miscellaneous
+
+* remove outdated Spendenvereinbarung ([3ef40fd](https://github.com/musikundkultur/wohnzimmer/commit/3ef40fd1ef087495e1671c070345973122318c01))
+
 ## [0.6.6](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.5...v0.6.6) (2023-09-18)
 
 
