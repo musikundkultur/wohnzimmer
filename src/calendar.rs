@@ -1,12 +1,14 @@
 pub mod google;
+pub mod templating;
 
 use super::Result;
 use crate::CalendarConfig;
 use async_trait::async_trait;
-use chrono::{DateTime, Datelike, DurationRound, Locale, Months, Utc};
+use chrono::{DateTime, Datelike, DurationRound, Months, Utc};
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::io;
 use std::ops::Range;
 use std::sync::Arc;
@@ -21,11 +23,18 @@ pub type UtcDate = DateTime<Utc>;
 /// Represents a single calendar event.
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Event {
-    /// The date of the event.
-    #[serde(serialize_with = "serialize_german_date")]
-    pub date: UtcDate,
+    /// The start date of the event.
+    pub start_date: UtcDate,
+    /// The end date of the event, if any.
+    pub end_date: Option<UtcDate>,
     /// The event title.
     pub title: String,
+}
+
+impl fmt::Display for Event {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.title.fmt(f)
+    }
 }
 
 /// Type alias for calendar events grouped by year.
@@ -89,7 +98,8 @@ impl GoogleCalendarEventSource {
 impl From<google::models::Event> for Event {
     fn from(ev: google::models::Event) -> Self {
         Self {
-            date: ev.start.date_time,
+            start_date: ev.start.date_time,
+            end_date: Some(ev.end.date_time),
             title: ev.summary,
         }
     }
@@ -167,7 +177,7 @@ impl Calendar {
 
         let events = events
             .into_iter()
-            .filter(|event| range.contains(&event.date))
+            .filter(|event| range.contains(&event.start_date))
             .collect();
 
         Ok(events)
@@ -181,7 +191,7 @@ impl Calendar {
 
         events.into_iter().for_each(|event| {
             events_by_year
-                .entry(event.date.year())
+                .entry(event.start_date.year())
                 .or_default()
                 .push(event);
         });
@@ -194,7 +204,7 @@ impl Calendar {
         log::debug!("synchronizing calendar events");
         let mut events = self.event_source.fetch_events().await?;
         // Ensure events are always sorted by date.
-        events.sort_by_key(|event| event.date);
+        events.sort_by_key(|event| event.start_date);
         *self.events.lock().await = events;
         Ok(())
     }
@@ -246,25 +256,12 @@ pub struct SyncTaskHandle {
 impl SyncTaskHandle {
     /// Stops the calendar sync task. Blocks until the background task is finished.
     pub async fn stop(self) -> io::Result<()> {
-        if let Ok(_) = self.stop_tx.send(()) {
+        if self.stop_tx.send(()).is_ok() {
             self.join_handle.await?;
         }
 
         Ok(())
     }
-}
-
-/// Serializes a date as `%e. %B` using german as locale, e.g. `13. Dezember`. This is used by
-/// minijinja in templates. The year display is handled by other means in the HTML template.
-fn serialize_german_date<S>(date: &UtcDate, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    let s = date
-        .with_timezone(&chrono_tz::CET)
-        .format_localized("%e. %B", Locale::de_DE)
-        .to_string();
-    serializer.serialize_str(&s)
 }
 
 #[cfg(test)]
@@ -284,7 +281,8 @@ mod tests {
         ($title:expr, $y:expr, $m:expr, $d:expr) => {
             Event {
                 title: $title.into(),
-                date: date!($y, $m, $d),
+                start_date: date!($y, $m, $d),
+                end_date: None,
             }
         };
     }
@@ -364,7 +362,8 @@ mod tests {
                 self.0.fetch_add(1, Ordering::SeqCst);
                 Ok(vec![Event {
                     title: "event".into(),
-                    date: date!(2023, 1, 1),
+                    start_date: date!(2023, 1, 1),
+                    end_date: None,
                 }])
             }
         }

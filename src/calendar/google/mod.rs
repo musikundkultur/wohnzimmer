@@ -218,11 +218,13 @@ mod tests {
     fn build_query_parameters_without_page_token_and_event_count_limit() {
         let start_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> = DateTime::from_utc(start_date.naive_utc(), Utc);
+        let start_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
 
         let end_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> = DateTime::from_utc(end_date.naive_utc(), Utc);
+        let end_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
 
         let date_range = DateRange {
             start: start_date,
@@ -251,11 +253,13 @@ mod tests {
     fn build_query_parameters_without_page_token() {
         let start_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> = DateTime::from_utc(start_date.naive_utc(), Utc);
+        let start_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
 
         let end_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> = DateTime::from_utc(end_date.naive_utc(), Utc);
+        let end_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
 
         let date_range = DateRange {
             start: start_date,
@@ -285,11 +289,13 @@ mod tests {
     fn build_query_parameters_without_event_count() {
         let start_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> = DateTime::from_utc(start_date.naive_utc(), Utc);
+        let start_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
 
         let end_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> = DateTime::from_utc(end_date.naive_utc(), Utc);
+        let end_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
 
         let date_range = DateRange {
             start: start_date,
@@ -320,11 +326,13 @@ mod tests {
     fn build_query_parameters_with_event_count_and_page_token() {
         let start_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> = DateTime::from_utc(start_date.naive_utc(), Utc);
+        let start_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
 
         let end_date: DateTime<FixedOffset> =
             DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> = DateTime::from_utc(end_date.naive_utc(), Utc);
+        let end_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
 
         let date_range = DateRange {
             start: start_date,

@@ -9,7 +9,7 @@
     <table summary="Termine {{ year }}">
       {% for event in events %}
       <tr>
-        <th>{{ event.date }}</th>
+        <th>{{ event.date }}<span>{{ event.time }} Uhr</span></th>
         <td>{{ event.title }}</td>
       </tr>
       {% endfor %}

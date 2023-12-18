@@ -11,7 +11,10 @@ mod rfc3339_to_datetime_utc {
     {
         let s = String::deserialize(deserializer)?;
         let offset_time = DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?;
-        Ok(DateTime::from_utc(offset_time.naive_utc(), Utc))
+        Ok(DateTime::from_naive_utc_and_offset(
+            offset_time.naive_utc(),
+            Utc,
+        ))
     }
 }
 

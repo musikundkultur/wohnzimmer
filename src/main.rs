@@ -68,7 +68,16 @@ async fn render_events(
             // response.
             log::error!("failed to fetch calendar events: {}", err);
             EventsByYear::default()
-        });
+        })
+        .into_iter()
+        .map(|(year, evts)| {
+            // Map events into StructObject values for rendering.
+            (
+                year,
+                evts.into_iter().map(Value::from_struct_object).collect(),
+            )
+        })
+        .collect::<indexmap::IndexMap<i32, Vec<Value>>>();
 
     tmpl_env.render(
         tmpl,
@@ -125,6 +134,7 @@ async fn main() -> anyhow::Result<()> {
     let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
     env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
     env.add_global("config", Value::from_serializable(&config));
+    env.add_global("cache_buster", Utc::now().timestamp());
 
     // The closure is invoked every time the environment is outdated to recreate it.
     let tmpl_reloader = AutoReloader::new(move |notifier| {
