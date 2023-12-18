@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.7...v0.7.0) (2023-12-18)
+
+
+### Features
+
+* **events:** display start and end date/time ([#118](https://github.com/musikundkultur/wohnzimmer/issues/118)) ([0ddb8df](https://github.com/musikundkultur/wohnzimmer/commit/0ddb8df413425377f2325945c9f068a5754ce65c))
+
+
+### Miscellaneous
+
+* **deps:** bump actions/cache from 3.3.1 to 3.3.2 ([#108](https://github.com/musikundkultur/wohnzimmer/issues/108)) ([afa1da0](https://github.com/musikundkultur/wohnzimmer/commit/afa1da0c63406bf5e26f65b2bbf70d4f93f30037))
+* **deps:** bump actions/checkout from 3 to 4 ([#107](https://github.com/musikundkultur/wohnzimmer/issues/107)) ([f9188e3](https://github.com/musikundkultur/wohnzimmer/commit/f9188e3255f23af27d6ac99f65f9d90ee64aade1))
+* **deps:** bump actix-web from 4.3.1 to 4.4.0 ([#102](https://github.com/musikundkultur/wohnzimmer/issues/102)) ([1fbca9e](https://github.com/musikundkultur/wohnzimmer/commit/1fbca9e9e41a09981031d68a6ee3e77dbb82d580))
+* **deps:** bump chrono from 0.4.24 to 0.4.31 ([#100](https://github.com/musikundkultur/wohnzimmer/issues/100)) ([d61e994](https://github.com/musikundkultur/wohnzimmer/commit/d61e9944295df00153a31284ebe3abb5b1dc45b1))
+* **deps:** bump docker/build-push-action from 4 to 5 ([#109](https://github.com/musikundkultur/wohnzimmer/issues/109)) ([78a09ed](https://github.com/musikundkultur/wohnzimmer/commit/78a09ed9e55627eba577fd971dda841afe3aa141))
+* **deps:** bump docker/login-action from 2 to 3 ([#106](https://github.com/musikundkultur/wohnzimmer/issues/106)) ([dbf129d](https://github.com/musikundkultur/wohnzimmer/commit/dbf129d3dca34094cb4d77cc4ab504b9a8b49904))
+* **deps:** bump docker/setup-buildx-action from 2 to 3 ([#110](https://github.com/musikundkultur/wohnzimmer/issues/110)) ([d978981](https://github.com/musikundkultur/wohnzimmer/commit/d978981a8fdcf1e5554c1ccde44b65cb0bd4319d))
+* **deps:** bump lukemathwalker/cargo-chef ([#117](https://github.com/musikundkultur/wohnzimmer/issues/117)) ([c724117](https://github.com/musikundkultur/wohnzimmer/commit/c7241171a29e537579a3c97309189969d659e480))
+* **deps:** bump thiserror from 1.0.47 to 1.0.50 ([#114](https://github.com/musikundkultur/wohnzimmer/issues/114)) ([7a8aea6](https://github.com/musikundkultur/wohnzimmer/commit/7a8aea63b6cb862feafc51606ceda74b3928fbd5))
+
 ## [0.6.7](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.6...v0.6.7) (2023-11-07)
 
 
