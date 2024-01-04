@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.7.0...v0.7.1) (2024-01-04)
+
+
+### Miscellaneous
+
+* **deps:** bump chrono-tz from 0.8.3 to 0.8.5 ([#121](https://github.com/musikundkultur/wohnzimmer/issues/121)) ([aae44b5](https://github.com/musikundkultur/wohnzimmer/commit/aae44b55c81b03958516177e3981da4223bbd92b))
+* **deps:** bump config from 0.13.3 to 0.13.4 ([#125](https://github.com/musikundkultur/wohnzimmer/issues/125)) ([e887e69](https://github.com/musikundkultur/wohnzimmer/commit/e887e69c454fd4937a2326fdf5b2131f8cbd20b5))
+* **deps:** bump google-cloud-auth from 0.11.0 to 0.13.0 ([#122](https://github.com/musikundkultur/wohnzimmer/issues/122)) ([4ec0f36](https://github.com/musikundkultur/wohnzimmer/commit/4ec0f36a50bc9088b5d98bd0644e967ca9418a1c))
+* **deps:** bump indexmap from 1.9.3 to 2.0.0 ([#123](https://github.com/musikundkultur/wohnzimmer/issues/123)) ([d2936b4](https://github.com/musikundkultur/wohnzimmer/commit/d2936b4fd44f562549358fad38d311b7dd1df92a))
+* **deps:** bump reqwest-middleware from 0.2.2 to 0.2.4 ([#124](https://github.com/musikundkultur/wohnzimmer/issues/124)) ([7b43768](https://github.com/musikundkultur/wohnzimmer/commit/7b437681ce6d62034f38991abede8b1fec67c46d))
+
 ## [0.7.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.7...v0.7.0) (2023-12-18)
 
 
