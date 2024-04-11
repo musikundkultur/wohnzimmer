@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 mod rfc3339_to_datetime_utc {
     use chrono::{DateTime, Utc};
-    use serde::{self, Deserialize, Deserializer};
+    use serde::{Deserialize, Deserializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
     where
