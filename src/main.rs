@@ -133,7 +133,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
     env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
-    env.add_global("config", Value::from_serializable(&config));
+    env.add_global("config", Value::from_serialize(&config));
     env.add_global("cache_buster", Utc::now().timestamp());
 
     // The closure is invoked every time the environment is outdated to recreate it.
