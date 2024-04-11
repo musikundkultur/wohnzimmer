@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/musikundkultur/wohnzimmer/compare/v0.7.0...v0.7.1) (2024-04-11)
+
+
+### Bug Fixes
+
+* **deps:** update Cargo.lock ([abc434a](https://github.com/musikundkultur/wohnzimmer/commit/abc434a4fea04f6c8133109aecfca3be6fe549e9))
+
 ## [0.7.0](https://github.com/musikundkultur/wohnzimmer/compare/v0.6.7...v0.7.0) (2023-12-18)
 
 
