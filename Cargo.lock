@@ -2676,7 +2676,7 @@ dependencies = [
 
 [[package]]
 name = "wohnzimmer"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "actix-files",
  "actix-rt",
