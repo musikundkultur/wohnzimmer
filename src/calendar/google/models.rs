@@ -1,20 +1,25 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::Deserialize;
 
 mod rfc3339_to_datetime_utc {
     use chrono::{DateTime, Utc};
     use serde::{Deserialize, Deserializer};
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let s = String::deserialize(deserializer)?;
-        let offset_time = DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?;
-        Ok(DateTime::from_naive_utc_and_offset(
-            offset_time.naive_utc(),
-            Utc,
-        ))
+        match Option::<String>::deserialize(deserializer)? {
+            Some(s) => {
+                let offset_time =
+                    DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?;
+                Ok(Some(DateTime::from_naive_utc_and_offset(
+                    offset_time.naive_utc(),
+                    Utc,
+                )))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -36,9 +41,27 @@ pub struct Organizer {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct Timepoint {
-    #[serde(with = "rfc3339_to_datetime_utc")]
-    pub date_time: DateTime<Utc>,
-    pub time_zone: String,
+    #[serde(default, with = "rfc3339_to_datetime_utc")]
+    pub date_time: Option<DateTime<Utc>>,
+    pub date: Option<NaiveDate>,
+    pub time_zone: Option<String>,
+}
+
+impl Timepoint {
+    // Converts the timepoint into a UTC DateTime.
+    pub fn to_date_time(&self) -> DateTime<Utc> {
+        self.date_time.unwrap_or_else(|| {
+            self.date
+                .and_then(|date| {
+                    date.and_hms_opt(0, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(chrono_tz::CET)
+                        .earliest()
+                        .map(|date| date.to_utc())
+                })
+                .unwrap_or_default()
+        })
+    }
 }
 
 #[derive(Debug, Deserialize)]
