@@ -3,13 +3,13 @@ pub mod models;
 use chrono::{DateTime, SecondsFormat, Utc};
 use google_cloud_auth::token::DefaultTokenSourceProvider;
 use google_cloud_token::{TokenSource, TokenSourceProvider};
+use http::Extensions;
 use indexmap::IndexMap;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, AUTHORIZATION};
 use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use std::ops::Range;
 use std::sync::Arc;
-use task_local_extensions::Extensions;
 
 /// Represents a timeframe with a start and end time
 pub type DateRange = Range<DateTime<Utc>>;
@@ -103,11 +103,7 @@ impl GoogleCalendarClient {
         };
 
         let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
-        let config = google_cloud_auth::project::Config {
-            audience: None,
-            scopes: Some(&scopes),
-            sub: None,
-        };
+        let config = google_cloud_auth::project::Config::default().with_scopes(&scopes);
 
         let token_source = DefaultTokenSourceProvider::new(config)
             .await?

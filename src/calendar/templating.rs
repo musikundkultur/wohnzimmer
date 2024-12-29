@@ -1,10 +1,11 @@
 use super::Event;
 use chrono::Locale;
-use minijinja::value::{StructObject, Value};
+use minijinja::value::{Object, Value};
+use std::sync::Arc;
 
-impl StructObject for Event {
-    fn get_field(&self, name: &str) -> Option<Value> {
-        let value = match name {
+impl Object for Event {
+    fn get_value(self: &Arc<Self>, field: &Value) -> Option<Value> {
+        let value = match field.as_str()? {
             "date" => {
                 let start_date = self
                     .start_date

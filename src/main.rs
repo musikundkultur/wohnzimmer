@@ -6,10 +6,9 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     middleware::{Compress, ErrorHandlerResponse, ErrorHandlers, Logger},
     route,
-    web::Data,
+    web::{Data, Html},
     App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
-use actix_web_lab::respond::Html;
 use chrono::{Duration, DurationRound, Months, Utc};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
@@ -31,7 +30,7 @@ impl MiniJinjaRenderer {
             .get_template(tmpl)
             .map_err(|_| error::ErrorInternalServerError("could not find template"))?
             .render(ctx.into())
-            .map(Html)
+            .map(Html::new)
             .map_err(|err| {
                 log::error!("{err}");
                 error::ErrorInternalServerError("template error")
@@ -72,10 +71,7 @@ async fn render_events(
         .into_iter()
         .map(|(year, evts)| {
             // Map events into StructObject values for rendering.
-            (
-                year,
-                evts.into_iter().map(Value::from_struct_object).collect(),
-            )
+            (year, evts.into_iter().map(Value::from_object).collect())
         })
         .collect::<indexmap::IndexMap<i32, Vec<Value>>>();
 
