@@ -98,8 +98,8 @@ impl GoogleCalendarEventSource {
 impl From<google::models::Event> for Event {
     fn from(ev: google::models::Event) -> Self {
         Self {
-            start_date: ev.start.date_time,
-            end_date: Some(ev.end.date_time),
+            start_date: ev.start.to_date_time(),
+            end_date: Some(ev.end.to_date_time()),
             title: ev.summary,
         }
     }

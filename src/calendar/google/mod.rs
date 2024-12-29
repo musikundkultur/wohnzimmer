@@ -157,6 +157,8 @@ impl GoogleCalendarClient {
             .json::<models::Events>()
             .await?;
 
+        log::debug!("fetched {} events from Google Calendar", events.items.len());
+
         Ok((events.items, events.next_page_token))
     }
 }
