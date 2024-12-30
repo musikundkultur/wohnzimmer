@@ -39,8 +39,7 @@ env:
   RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
 
 permissions:
-  contents: write
-  issues: write
+  contents: read
   pull-requests: write
 
 jobs:
