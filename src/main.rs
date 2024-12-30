@@ -9,7 +9,7 @@ use actix_web::{
     web::{Data, Html},
     App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
-use chrono::{Duration, DurationRound, Months, Utc};
+use jiff::{Timestamp, ToSpan, Zoned};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
 use tokio::time;
@@ -54,13 +54,14 @@ async fn render_events(
     tmpl_env: MiniJinjaRenderer,
     tmpl: &str,
     calendar: Data<Calendar>,
-    months: u32,
+    months: i8,
 ) -> Result<impl Responder> {
-    let now = Utc::now().duration_trunc(Duration::days(1)).unwrap();
-    let end = now + Months::new(months);
+    let now = Zoned::now();
+    let start = now.start_of_day().unwrap();
+    let end = &start + months.months();
 
     let events_by_year = calendar
-        .get_events_by_year(now..end)
+        .get_events_by_year(start.timestamp()..end.timestamp())
         .await
         .unwrap_or_else(|err| {
             // Handle this error gracefully by just displaying no events instead of sending a 500
@@ -73,7 +74,7 @@ async fn render_events(
             // Map events into StructObject values for rendering.
             (year, evts.into_iter().map(Value::from_object).collect())
         })
-        .collect::<indexmap::IndexMap<i32, Vec<Value>>>();
+        .collect::<indexmap::IndexMap<i16, Vec<Value>>>();
 
     tmpl_env.render(
         tmpl,
@@ -130,7 +131,7 @@ async fn main() -> anyhow::Result<()> {
     let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
     env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
     env.add_global("config", Value::from_serialize(&config));
-    env.add_global("cache_buster", Utc::now().timestamp());
+    env.add_global("cache_buster", Timestamp::now().as_second());
 
     // The closure is invoked every time the environment is outdated to recreate it.
     let tmpl_reloader = AutoReloader::new(move |notifier| {

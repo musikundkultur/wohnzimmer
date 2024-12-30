@@ -1,18 +1,15 @@
 pub mod models;
 
-use chrono::{DateTime, SecondsFormat, Utc};
 use google_cloud_auth::token::DefaultTokenSourceProvider;
 use google_cloud_token::{TokenSource, TokenSourceProvider};
 use http::Extensions;
 use indexmap::IndexMap;
+use jiff::Timestamp;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, AUTHORIZATION};
 use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use std::ops::Range;
 use std::sync::Arc;
-
-/// Represents a timeframe with a start and end time
-pub type DateRange = Range<DateTime<Utc>>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
@@ -133,7 +130,7 @@ impl GoogleCalendarClient {
     /// the given requirements.
     pub async fn get_events(
         &self,
-        date_range: Option<DateRange>,
+        date_range: Option<Range<Timestamp>>,
         event_count: Option<u32>,
         next_page_token: Option<String>,
     ) -> Result<(Vec<models::Event>, Option<String>), ClientError> {
@@ -142,12 +139,10 @@ impl GoogleCalendarClient {
             self.calendar_id
         ));
 
+        let query = build_query_parameters(&date_range, &event_count, &next_page_token);
+
         let events = events_request
-            .query(&build_query_parameters(
-                &date_range,
-                &event_count,
-                &next_page_token,
-            ))
+            .query(&query)
             .send()
             .await?
             .json::<models::Events>()
@@ -160,7 +155,7 @@ impl GoogleCalendarClient {
 }
 
 fn build_query_parameters(
-    date_range: &Option<DateRange>,
+    date_range: &Option<Range<Timestamp>>,
     event_count: &Option<u32>,
     next_page_token: &Option<String>,
 ) -> IndexMap<&'static str, String> {
@@ -175,11 +170,9 @@ fn build_query_parameters(
     ]);
 
     if let Some(range) = date_range {
-        let start_date = range.start.to_rfc3339_opts(SecondsFormat::Secs, true);
-        let end_date = range.end.to_rfc3339_opts(SecondsFormat::Secs, true);
         // limit the events by a time frame
-        query_parameters.insert("timeMin", start_date);
-        query_parameters.insert("timeMax", end_date);
+        query_parameters.insert("timeMin", range.start.to_string());
+        query_parameters.insert("timeMax", range.end.to_string());
     }
 
     if let Some(count) = event_count {
@@ -197,51 +190,29 @@ fn build_query_parameters(
 
 #[cfg(test)]
 mod tests {
-    use chrono::FixedOffset;
-
     use super::*;
 
     #[test]
     fn build_query_parameters_without_parameters() {
         let query_parameters = build_query_parameters(&None, &None, &None);
 
-        let expected_parameters = IndexMap::from([
-            ("singleEvents", "true".to_owned()),
-            ("orderBy", "startTime".to_owned()),
-        ]);
+        let expected_parameters =
+            IndexMap::from([("singleEvents", "true"), ("orderBy", "startTime")]);
 
         assert_eq!(expected_parameters, query_parameters);
     }
     #[test]
     fn build_query_parameters_without_page_token_and_event_count_limit() {
-        let start_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
+        let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
+        let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
-        let end_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
-
-        let date_range = DateRange {
-            start: start_date,
-            end: end_date,
-        };
-
-        let query_parameters = build_query_parameters(&Some(date_range), &None, &None);
+        let query_parameters = build_query_parameters(&Some(start_date..end_date), &None, &None);
 
         let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
             ("orderBy", "startTime".to_owned()),
-            (
-                "timeMin",
-                start_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            (
-                "timeMax",
-                end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
+            ("timeMin", start_date.to_string()),
+            ("timeMax", end_date.to_string()),
         ]);
 
         assert_eq!(expected_parameters, query_parameters);
@@ -249,35 +220,18 @@ mod tests {
 
     #[test]
     fn build_query_parameters_without_page_token() {
-        let start_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
+        let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
+        let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
-        let end_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
-
-        let date_range = DateRange {
-            start: start_date,
-            end: end_date,
-        };
-
-        let query_parameters = build_query_parameters(&Some(date_range), &Some(30), &None);
+        let query_parameters =
+            build_query_parameters(&Some(start_date..end_date), &Some(30), &None);
 
         let expected_parameters = IndexMap::from([
-            ("singleEvents", "true".to_owned()),
-            ("orderBy", "startTime".to_owned()),
-            (
-                "timeMin",
-                start_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            (
-                "timeMax",
-                end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            ("maxResults", "30".to_owned()),
+            ("singleEvents", "true"),
+            ("orderBy", "startTime"),
+            ("timeMin", "1996-12-20T00:39:57Z"),
+            ("timeMax", "1996-12-20T01:39:57Z"),
+            ("maxResults", "30"),
         ]);
 
         assert_eq!(expected_parameters, query_parameters);
@@ -285,36 +239,18 @@ mod tests {
 
     #[test]
     fn build_query_parameters_without_event_count() {
-        let start_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
-
-        let end_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
-
-        let date_range = DateRange {
-            start: start_date,
-            end: end_date,
-        };
+        let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
+        let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
         let query_parameters =
-            build_query_parameters(&Some(date_range), &None, &Some("abcd".to_owned()));
+            build_query_parameters(&Some(start_date..end_date), &None, &Some("abcd".to_owned()));
 
         let expected_parameters = IndexMap::from([
-            ("singleEvents", "true".to_owned()),
-            ("orderBy", "startTime".to_owned()),
-            (
-                "timeMin",
-                start_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            (
-                "timeMax",
-                end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            ("pageToken", "abcd".to_owned()),
+            ("singleEvents", "true"),
+            ("orderBy", "startTime"),
+            ("timeMin", "1996-12-20T00:39:57Z"),
+            ("timeMax", "1996-12-20T01:39:57Z"),
+            ("pageToken", "abcd"),
         ]);
 
         assert_eq!(expected_parameters, query_parameters);
@@ -322,37 +258,22 @@ mod tests {
 
     #[test]
     fn build_query_parameters_with_event_count_and_page_token() {
-        let start_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap();
-        let start_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(start_date.naive_utc(), Utc);
+        let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
+        let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
-        let end_date: DateTime<FixedOffset> =
-            DateTime::parse_from_rfc3339("1996-12-19T16:39:57-09:00").unwrap();
-        let end_date: DateTime<Utc> =
-            DateTime::from_naive_utc_and_offset(end_date.naive_utc(), Utc);
-
-        let date_range = DateRange {
-            start: start_date,
-            end: end_date,
-        };
-
-        let query_parameters =
-            build_query_parameters(&Some(date_range), &Some(30), &Some("abcd".to_owned()));
+        let query_parameters = build_query_parameters(
+            &Some(start_date..end_date),
+            &Some(30),
+            &Some("abcd".to_owned()),
+        );
 
         let expected_parameters = IndexMap::from([
-            ("singleEvents", "true".to_owned()),
-            ("orderBy", "startTime".to_owned()),
-            (
-                "timeMin",
-                start_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            (
-                "timeMax",
-                end_date.to_rfc3339_opts(SecondsFormat::Secs, true),
-            ),
-            ("maxResults", "30".to_owned()),
-            ("pageToken", "abcd".to_owned()),
+            ("singleEvents", "true"),
+            ("orderBy", "startTime"),
+            ("timeMin", "1996-12-20T00:39:57Z"),
+            ("timeMax", "1996-12-20T01:39:57Z"),
+            ("maxResults", "30"),
+            ("pageToken", "abcd"),
         ]);
 
         assert_eq!(expected_parameters, query_parameters);

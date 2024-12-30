@@ -11,6 +11,7 @@ processes = []
 
 [env]
   APP_ENV = "production"
+  TZ = "Europe/Berlin"
 
 [experimental]
   allowed_public_ports = []
