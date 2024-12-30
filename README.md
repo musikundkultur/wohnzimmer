@@ -77,44 +77,28 @@ appropriate values:
 
 ## Release process
 
-This project uses
-[Release Please](https://github.com/googleapis/release-please) which works with
-[Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/)
-to automate the release process.
+> [!NOTE]
+> Until version
+> [v0.7.1](https://github.com/musikundkultur/wohnzimmer/releases/tag/v0.7.1) we
+> used [Release Please](https://github.com/googleapis/release-please) to create
+> releases based on [Conventional Commit
+> messages](https://www.conventionalcommits.org/en/v1.0.0/) to automate the
+> release process. The release process was simplified and as a consequence
+> there are no automated updates to [`CHANGELOG.md`](CHANGELOG.md) anymore.
 
-Whenever a Conventional Commit lands in the `main` branch, Release Please will
-update the current Release PR with the next version bump and a new entry in the
-Changelog ([here is an
-example](https://github.com/musikundkultur/wohnzimmer/pull/6)).
-
-**Please note**: Commits that do not follow the Conventional Commit
-specification will not cause problems. However, they will not show up in the
-[`CHANGELOG.md`](CHANGELOG.md) and will also not cause any version bumps so it
-is advised to avoid these.
-
-### Merging a Release PR
-
-Merging a Release PR into `main` will trigger the
-[`release`](.github/workflows/release.yml) workflow which performs the
-following steps:
-
-- It creates a tag and a [GitHub
-  release](https://github.com/musikundkultur/wohnzimmer/releases) for the
-  target version bump.
-- It builds a new docker image and pushes it to
-  [ghcr.io](https://github.com/musikundkultur/wohnzimmer/pkgs/container/wohnzimmer).
-- The application is automatically deployed to [fly.io](https://fly.io/) using
-  the new docker image.
+The [`container`](.github/workflows/container.yml) workflow automatically
+deploys container images build off of Git tags and the `main` branch directly
+to production.
 
 ### Manual releases
 
 In rare cases it might be necessary to trigger a manual deployment. Given the
 necessary repository permissions, the
-[`release`](.github/workflows/release.yml) workflow can be triggered manually
+[`container`](.github/workflows/container.yml) workflow can be triggered manually
 for arbitrary branches and tags via workflow dispatch.
 
-This will start a deployment for the commit referenced by the tag or the
-branches' `HEAD` without creating a new GitHub release.
+This will build the image and start a deployment for the commit referenced by
+the tag or the branches' `HEAD`.
 
 Alternatively, the application can be built and deployed from a local machine
 via [`flyctl`](https://github.com/superfly/flyctl):
