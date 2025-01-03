@@ -1,11 +1,13 @@
 use config::{Config, Environment, File};
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::fmt;
 use std::io;
 use std::net::SocketAddr;
 use thiserror::Error;
 
 pub mod calendar;
+pub mod metrics;
 
 /// Result type used throughout this crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -20,6 +22,22 @@ pub enum Error {
     Config(#[from] config::ConfigError),
     #[error("Client error: {0}")]
     GoogleCalendar(#[from] calendar::google::ClientError),
+    #[error("Prometheus error: {0}")]
+    Prometheus(#[from] prometheus::Error),
+    #[error("{0}")]
+    Message(String),
+}
+
+impl Error {
+    pub fn new(msg: impl fmt::Display) -> Self {
+        Error::Message(msg.to_string())
+    }
+}
+
+impl From<Box<dyn std::error::Error + Send + Sync>> for Error {
+    fn from(err: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        Error::new(err)
+    }
 }
 
 /// A link configuration.
@@ -68,6 +86,24 @@ pub struct ServerConfig {
     pub template_autoreload: bool,
 }
 
+/// Global metrics configuration.
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
+pub struct MetricsConfig {
+    pub path: Option<String>,
+    pub username: String,
+    pub password: Option<String>,
+}
+
+impl MetricsConfig {
+    pub fn path(&self) -> &str {
+        self.path.as_deref().unwrap_or("/metrics")
+    }
+
+    pub fn auth_enabled(&self) -> bool {
+        self.password.is_some()
+    }
+}
+
 /// Global application configuration.
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct AppConfig {
@@ -77,6 +113,9 @@ pub struct AppConfig {
     pub site: SiteConfig,
     /// Calendar configuration section.
     pub calendar: CalendarConfig,
+    /// Metrics configuration section.
+    #[serde(default)]
+    pub metrics: MetricsConfig,
 }
 
 impl AppConfig {

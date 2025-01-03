@@ -2,6 +2,7 @@ pub mod google;
 pub mod templating;
 
 use super::Result;
+use crate::metrics::Metrics;
 use crate::CalendarConfig;
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
@@ -143,28 +144,30 @@ where
 pub struct Calendar {
     event_source: Arc<dyn EventSource>,
     events: Arc<Mutex<Vec<Event>>>,
+    metrics: Metrics,
 }
 
 impl Calendar {
     /// Creates a new `Calendar` from an event source.
-    pub fn new<T>(event_source: T) -> Calendar
+    pub fn new<T>(event_source: T, metrics: Metrics) -> Calendar
     where
         T: EventSource + 'static,
     {
         Calendar {
             event_source: Arc::new(event_source),
             events: Default::default(),
+            metrics,
         }
     }
 
     /// Creates a new `Calendar` from configuration.
-    pub async fn from_config(config: &CalendarConfig) -> Result<Calendar> {
+    pub async fn from_config(config: &CalendarConfig, metrics: Metrics) -> Result<Calendar> {
         let event_source: Box<dyn EventSource> = match config.event_source {
             EventSourceKind::Static => Box::new(StaticEventSource::new(config.events.clone())),
             EventSourceKind::GoogleCalendar => Box::new(GoogleCalendarEventSource::new().await?),
         };
 
-        Ok(Calendar::new(event_source))
+        Ok(Calendar::new(event_source, metrics))
     }
 
     /// Filters events between a start date (inclusive) and an end date (exclusive).
@@ -199,11 +202,22 @@ impl Calendar {
     /// Synchronize events from the source into the calendar once.
     pub async fn sync_once(&self) -> Result<()> {
         log::debug!("synchronizing calendar events");
-        let mut events = self.event_source.fetch_events().await?;
-        // Ensure events are always sorted by date.
-        events.sort_by_key(|event| event.start_date);
-        *self.events.lock().await = events;
-        Ok(())
+
+        match self.event_source.fetch_events().await {
+            Ok(mut events) => {
+                self.metrics.calendar_syncs("success").inc();
+                self.metrics.calendar_events().set(events.len() as i64);
+
+                // Ensure events are always sorted by date.
+                events.sort_by_key(|event| event.start_date);
+                *self.events.lock().await = events;
+                Ok(())
+            }
+            Err(err) => {
+                self.metrics.calendar_syncs("error").inc();
+                Err(err)
+            }
+        }
     }
 
     /// Starts to periodically sync the calendar every `interval` until a message is received via

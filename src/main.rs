@@ -1,20 +1,27 @@
 use actix_files::Files;
 use actix_utils::future::{ready, Ready};
 use actix_web::{
-    dev::{self, ServiceResponse},
-    error,
-    http::{header::ContentType, StatusCode},
-    middleware::{Compress, ErrorHandlerResponse, ErrorHandlers, Logger},
+    dev::{self, ServiceRequest, ServiceResponse},
+    error::{self, ErrorUnauthorized},
+    http::{
+        header::{self, ContentType},
+        StatusCode,
+    },
+    middleware::{Compress, Condition, ErrorHandlerResponse, ErrorHandlers, Logger},
     route,
-    web::{Data, Html},
+    web::{self, Data, Html},
     App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
+use actix_web_httpauth::{extractors::basic::BasicAuth, middleware::HttpAuthentication};
+use actix_web_prom::PrometheusMetricsBuilder;
 use jiff::{Timestamp, ToSpan, Zoned};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
+use prometheus::{Encoder, Registry, TextEncoder};
 use tokio::time;
 use wohnzimmer::{
     calendar::{Calendar, EventsByYear},
+    metrics::Metrics,
     AppConfig,
 };
 
@@ -111,13 +118,35 @@ async fn imprint(req: HttpRequest, tmpl_env: MiniJinjaRenderer) -> Result<impl R
     )
 }
 
+//#[route("/metrics", method = "GET")]
+async fn serve_metrics(registry: Data<Registry>) -> Result<impl Responder> {
+    let mut buf = Vec::new();
+    let metrics_families = registry.gather();
+
+    TextEncoder::new()
+        .encode(&metrics_families, &mut buf)
+        .unwrap();
+
+    Ok(HttpResponse::Ok()
+        .insert_header((
+            header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        ))
+        .body(buf))
+}
+
 #[actix_web::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> wohnzimmer::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let config = AppConfig::load()?;
 
-    let calendar = Calendar::from_config(&config.calendar).await?;
+    let namespace = env!("CARGO_PKG_NAME").replace('-', "_");
+    let prometheus = PrometheusMetricsBuilder::new(&namespace).build()?;
+
+    let metrics = Metrics::new(&namespace, &prometheus.registry)?;
+
+    let calendar = Calendar::from_config(&config.calendar, metrics).await?;
 
     let period = time::Duration::from_secs(config.calendar.sync_period_seconds.unwrap_or(60));
     let sync_task_handle = calendar.spawn_sync_task(period).await;
@@ -149,6 +178,8 @@ async fn main() -> anyhow::Result<()> {
 
     let calendar = Data::new(calendar);
     let tmpl_reloader = Data::new(tmpl_reloader);
+    let registry = Data::new(prometheus.registry.clone());
+    let cfg = Data::new(config.clone());
 
     log::info!("starting HTTP server at {}", config.server.listen_addr);
 
@@ -156,9 +187,20 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .app_data(calendar.clone())
             .app_data(tmpl_reloader.clone())
+            .app_data(registry.clone())
+            .app_data(cfg.clone())
+            .wrap(prometheus.clone())
             .service(imprint)
             .service(events)
             .service(index)
+            .service(
+                web::scope(config.metrics.path())
+                    .wrap(Condition::new(
+                        config.metrics.auth_enabled(),
+                        HttpAuthentication::basic(authenticate),
+                    ))
+                    .service(web::resource("").get(serve_metrics)),
+            )
             .service(Files::new("/static", "./static"))
             .wrap(
                 ErrorHandlers::new()
@@ -178,6 +220,23 @@ async fn main() -> anyhow::Result<()> {
     sync_task_handle.stop().await?;
 
     Ok(())
+}
+
+async fn authenticate(
+    req: ServiceRequest,
+    credentials: BasicAuth,
+) -> Result<ServiceRequest, (actix_web::Error, ServiceRequest)> {
+    let config = <Data<AppConfig>>::extract(req.request())
+        .into_inner()
+        .unwrap();
+
+    if credentials.user_id() == &config.metrics.username
+        && credentials.password() == config.metrics.password.as_deref()
+    {
+        Ok(req)
+    } else {
+        Err((ErrorUnauthorized("you shall not pass"), req))
+    }
 }
 
 /// Error handler for a 404 Page not found error.
