@@ -4,9 +4,9 @@ pub mod templating;
 use super::Result;
 use crate::CalendarConfig;
 use async_trait::async_trait;
-use chrono::{DateTime, Datelike, DurationRound, Months, Utc};
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
+use jiff::{tz::TimeZone, Timestamp, ToSpan, Zoned};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io;
@@ -17,16 +17,13 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tokio::time::Duration;
 
-/// Type alias for a date represented in UTC.
-pub type UtcDate = DateTime<Utc>;
-
 /// Represents a single calendar event.
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Event {
     /// The start date of the event.
-    pub start_date: UtcDate,
+    pub start_date: Timestamp,
     /// The end date of the event, if any.
-    pub end_date: Option<UtcDate>,
+    pub end_date: Option<Timestamp>,
     /// The event title.
     pub title: String,
 }
@@ -38,7 +35,7 @@ impl fmt::Display for Event {
 }
 
 /// Type alias for calendar events grouped by year.
-pub type EventsByYear = IndexMap<i32, Vec<Event>>;
+pub type EventsByYear = IndexMap<i16, Vec<Event>>;
 
 /// Represents sources of calendar events.
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
@@ -98,8 +95,8 @@ impl GoogleCalendarEventSource {
 impl From<google::models::Event> for Event {
     fn from(ev: google::models::Event) -> Self {
         Self {
-            start_date: ev.start.to_date_time(),
-            end_date: Some(ev.end.to_date_time()),
+            start_date: ev.start.to_timestamp(),
+            end_date: Some(ev.end.to_timestamp()),
             title: ev.summary,
         }
     }
@@ -108,14 +105,13 @@ impl From<google::models::Event> for Event {
 #[async_trait]
 impl EventSource for GoogleCalendarEventSource {
     async fn fetch_events(&self) -> Result<Vec<Event>> {
-        let now = Utc::now()
-            .duration_trunc(chrono::Duration::days(1))
-            .unwrap();
-        let in_twelve_months = now + Months::new(12);
+        let now = Zoned::now();
+        let start = now.start_of_day().unwrap();
+        let end = &start + 12.months();
 
         let events = self
             .client
-            .get_events(Some(now..in_twelve_months), None, None)
+            .get_events(Some(start.timestamp()..end.timestamp()), None, None)
             .await?;
 
         Ok(events.0.into_iter().map(Into::into).collect())
@@ -172,7 +168,7 @@ impl Calendar {
     }
 
     /// Filters events between a start date (inclusive) and an end date (exclusive).
-    pub async fn get_events(&self, range: Range<UtcDate>) -> Result<Vec<Event>> {
+    pub async fn get_events(&self, range: Range<Timestamp>) -> Result<Vec<Event>> {
         let events = self.events.lock().await.clone();
 
         let events = events
@@ -185,13 +181,14 @@ impl Calendar {
 
     /// Builds an index of event year to list of events. This is used to avoid having complicated
     /// logic for displaying events by year in HTML templates.
-    pub async fn get_events_by_year(&self, range: Range<UtcDate>) -> Result<EventsByYear> {
+    pub async fn get_events_by_year(&self, range: Range<Timestamp>) -> Result<EventsByYear> {
         let events = self.get_events(range).await?;
         let mut events_by_year: EventsByYear = IndexMap::new();
 
         events.into_iter().for_each(|event| {
+            let start_date = event.start_date.to_zoned(TimeZone::system());
             events_by_year
-                .entry(event.start_date.year())
+                .entry(start_date.year())
                 .or_default()
                 .push(event);
         });
@@ -267,13 +264,16 @@ impl SyncTaskHandle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
     use indexmap::indexmap;
+    use jiff::{civil::datetime, tz::TimeZone};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     macro_rules! date {
         ($y:expr, $m:expr, $d:expr) => {
-            Utc.with_ymd_and_hms($y, $m, $d, 0, 0, 0).unwrap()
+            datetime($y, $m, $d, 0, 0, 0, 0)
+                .to_zoned(TimeZone::system())
+                .unwrap()
+                .timestamp()
         };
     }
 

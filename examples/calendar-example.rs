@@ -1,7 +1,7 @@
 extern crate dotenv;
 
-use chrono::{Months, Utc};
 use dotenv::dotenv;
+use jiff::{ToSpan, Zoned};
 use std::error::Error;
 use wohnzimmer::calendar::{Calendar, GoogleCalendarEventSource};
 
@@ -13,12 +13,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let calendar = Calendar::new(GoogleCalendarEventSource::new().await?);
     calendar.sync_once().await?;
 
-    let now = Utc::now();
-    let one_month_ago = now - Months::new(1);
-    let in_six_months = now + Months::new(6);
+    let now = Zoned::now();
+    let start = &now - 1.months();
+    let end = &now + 6.months();
 
     let events_by_year = calendar
-        .get_events_by_year(one_month_ago..in_six_months)
+        .get_events_by_year(start.timestamp()..end.timestamp())
         .await?;
 
     println!("{:#?}", events_by_year);
