@@ -2,11 +2,13 @@ pub mod google;
 pub mod templating;
 
 use super::Result;
+use crate::metrics::CalendarMetrics;
 use crate::CalendarConfig;
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
 use jiff::{tz::TimeZone, Timestamp, ToSpan, Zoned};
+use prometheus::Registry;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io;
@@ -143,18 +145,20 @@ where
 pub struct Calendar {
     event_source: Arc<dyn EventSource>,
     events: Arc<Mutex<Vec<Event>>>,
+    metrics: Arc<CalendarMetrics>,
 }
 
 impl Calendar {
     /// Creates a new `Calendar` from an event source.
-    pub fn new<T>(event_source: T) -> Calendar
+    pub fn new<T>(event_source: T) -> Result<Calendar>
     where
         T: EventSource + 'static,
     {
-        Calendar {
+        Ok(Calendar {
             event_source: Arc::new(event_source),
             events: Default::default(),
-        }
+            metrics: Arc::new(CalendarMetrics::new()?),
+        })
     }
 
     /// Creates a new `Calendar` from configuration.
@@ -164,7 +168,12 @@ impl Calendar {
             EventSourceKind::GoogleCalendar => Box::new(GoogleCalendarEventSource::new().await?),
         };
 
-        Ok(Calendar::new(event_source))
+        Calendar::new(event_source)
+    }
+
+    /// Registers the calendar metrics in a prometheus registry.
+    pub fn register_metrics(&self, registry: &Registry) -> Result<()> {
+        self.metrics.register(registry)
     }
 
     /// Filters events between a start date (inclusive) and an end date (exclusive).
@@ -199,11 +208,21 @@ impl Calendar {
     /// Synchronize events from the source into the calendar once.
     pub async fn sync_once(&self) -> Result<()> {
         log::debug!("synchronizing calendar events");
-        let mut events = self.event_source.fetch_events().await?;
-        // Ensure events are always sorted by date.
-        events.sort_by_key(|event| event.start_date);
-        *self.events.lock().await = events;
-        Ok(())
+
+        match self.event_source.fetch_events().await {
+            Ok(mut events) => {
+                self.metrics.calendar_syncs("success").inc();
+                self.metrics.calendar_events().set(events.len() as i64);
+                // Ensure events are always sorted by date.
+                events.sort_by_key(|event| event.start_date);
+                *self.events.lock().await = events;
+                Ok(())
+            }
+            Err(err) => {
+                self.metrics.calendar_syncs("error").inc();
+                Err(err)
+            }
+        }
     }
 
     /// Starts to periodically sync the calendar every `interval` until a message is received via
@@ -295,7 +314,8 @@ mod tests {
             event!("c", 2023, 1, 1),
             event!("d", 2023, 1, 2),
             event!("e", 2023, 1, 1),
-        ]));
+        ]))
+        .unwrap();
         calendar.sync_once().await.unwrap();
 
         assert_eq!(
@@ -326,7 +346,8 @@ mod tests {
             event!("c", 2023, 1, 1),
             event!("d", 2023, 1, 2),
             event!("e", 2023, 1, 1),
-        ]));
+        ]))
+        .unwrap();
         calendar.sync_once().await.unwrap();
 
         let expected = indexmap! {
@@ -370,7 +391,7 @@ mod tests {
 
         let counter = Arc::new(Counter(AtomicUsize::new(0)));
 
-        let calendar = Arc::new(Calendar::new(counter.clone()));
+        let calendar = Arc::new(Calendar::new(counter.clone()).unwrap());
 
         let range1 = date!(2023, 1, 1)..date!(2023, 1, 2);
         let range2 = date!(2023, 1, 2)..date!(2023, 1, 3);
@@ -378,7 +399,15 @@ mod tests {
         // Initially, there are no events because no sync happened.
         assert_eq!(calendar.get_events(range1.clone()).await.unwrap(), vec![]);
 
+        assert_eq!(calendar.metrics.calendar_events().get(), 0);
+        assert_eq!(calendar.metrics.calendar_syncs("success").get(), 0);
+        assert_eq!(calendar.metrics.calendar_syncs("error").get(), 0);
+
         calendar.sync_once().await.unwrap();
+
+        assert_eq!(calendar.metrics.calendar_events().get(), 1);
+        assert_eq!(calendar.metrics.calendar_syncs("success").get(), 1);
+        assert_eq!(calendar.metrics.calendar_syncs("error").get(), 0);
 
         assert_eq!(
             calendar.get_events(range1.clone()).await.unwrap(),
@@ -400,6 +429,8 @@ mod tests {
 
         // Manual `sync_one` above + initial sync + sync after 10ms = 3 syncs.
         assert_eq!(counter.0.load(Ordering::Relaxed), 3);
+        assert_eq!(calendar.metrics.calendar_syncs("success").get(), 3);
+        assert_eq!(calendar.metrics.calendar_syncs("error").get(), 0);
 
         tokio::time::sleep(Duration::from_millis(15)).await;
 

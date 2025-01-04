@@ -1,3 +1,4 @@
+use actix_web::ResponseError;
 use config::{Config, Environment, File};
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -6,6 +7,7 @@ use std::net::SocketAddr;
 use thiserror::Error;
 
 pub mod calendar;
+pub mod metrics;
 
 /// Result type used throughout this crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -20,7 +22,11 @@ pub enum Error {
     Config(#[from] config::ConfigError),
     #[error("Client error: {0}")]
     GoogleCalendar(#[from] calendar::google::ClientError),
+    #[error("Prometheus error: {0}")]
+    Prometheus(#[from] prometheus::Error),
 }
+
+impl ResponseError for Error {}
 
 /// A link configuration.
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -77,6 +83,18 @@ pub struct AppConfig {
     pub site: SiteConfig,
     /// Calendar configuration section.
     pub calendar: CalendarConfig,
+    /// Metrics configuration section.
+    pub metrics: MetricsConfig,
+}
+
+/// Global metrics configuration.
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct MetricsConfig {
+    /// Whether to enable the metrics server or not.
+    pub enabled: bool,
+    /// Token to use for Bearer authentication. If `None`, the metrics endpoint will be
+    /// unauthenticated.
+    pub token: Option<String>,
 }
 
 impl AppConfig {
