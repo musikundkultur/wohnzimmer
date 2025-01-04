@@ -15,6 +15,7 @@
   ],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
+  "schedule": ["on the first day of the month"],
   "suppressNotifications": ["prEditedNotification", "prIgnoreNotification"],
   "rebaseWhen": "conflicted",
   "assigneesFromCodeOwners": false,
