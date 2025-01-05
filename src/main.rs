@@ -1,22 +1,27 @@
 use actix_files::Files;
 use actix_utils::future::{ready, Ready};
-use actix_web::{
-    dev::{self, ServiceResponse},
-    error,
-    http::{header::ContentType, StatusCode},
-    middleware::{Compress, ErrorHandlerResponse, ErrorHandlers, Logger},
-    route,
-    web::{Data, Html},
-    App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+use actix_web::dev::{self, ServiceRequest, ServiceResponse};
+use actix_web::error::{
+    ErrorBadRequest, ErrorInternalServerError, ErrorNotFound, ErrorUnauthorized,
 };
+use actix_web::http::header::{self, ContentType};
+use actix_web::http::StatusCode;
+use actix_web::middleware::{Compress, Condition, ErrorHandlerResponse, ErrorHandlers, Logger};
+use actix_web::web::{self, Data, Html};
+use actix_web::{
+    route, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+};
+use actix_web_httpauth::extractors::bearer::BearerAuth;
+use actix_web_httpauth::middleware::HttpAuthentication;
+use actix_web_prom::PrometheusMetricsBuilder;
 use jiff::{Timestamp, ToSpan, Zoned};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
+use prometheus::{process_collector::ProcessCollector, Encoder, Registry, TextEncoder};
 use tokio::time;
-use wohnzimmer::{
-    calendar::{Calendar, EventsByYear},
-    AppConfig,
-};
+use wohnzimmer::calendar::{Calendar, EventsByYear};
+use wohnzimmer::metrics::NAMESPACE;
+use wohnzimmer::{AppConfig, MetricsConfig};
 
 struct MiniJinjaRenderer {
     tmpl_env: Data<AutoReloader>,
@@ -26,14 +31,14 @@ impl MiniJinjaRenderer {
     fn render(&self, tmpl: &str, ctx: impl Into<minijinja::value::Value>) -> Result<Html> {
         self.tmpl_env
             .acquire_env()
-            .map_err(|_| error::ErrorInternalServerError("could not acquire template env"))?
+            .map_err(|_| ErrorInternalServerError("could not acquire template env"))?
             .get_template(tmpl)
-            .map_err(|_| error::ErrorInternalServerError("could not find template"))?
+            .map_err(|_| ErrorInternalServerError("could not find template"))?
             .render(ctx.into())
             .map(Html::new)
             .map_err(|err| {
                 log::error!("{err}");
-                error::ErrorInternalServerError("template error")
+                ErrorInternalServerError("template error")
             })
     }
 }
@@ -111,6 +116,50 @@ async fn imprint(req: HttpRequest, tmpl_env: MiniJinjaRenderer) -> Result<impl R
     )
 }
 
+async fn metrics(registry: Data<Registry>) -> Result<impl Responder> {
+    let mut buf = Vec::new();
+    let metrics_families = registry.gather();
+
+    TextEncoder::new()
+        .encode(&metrics_families, &mut buf)
+        .map_err(wohnzimmer::Error::from)?;
+
+    Ok(HttpResponse::Ok()
+        .insert_header((
+            header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        ))
+        .body(buf))
+}
+
+async fn metrics_auth(
+    req: ServiceRequest,
+    credentials: Option<BearerAuth>,
+) -> Result<ServiceRequest, (actix_web::Error, ServiceRequest)> {
+    let config = <Data<MetricsConfig>>::extract(req.request())
+        .into_inner()
+        .unwrap();
+
+    // If metrics are disabled we just pretend the metrics endpoint does not exist.
+    if !config.enabled {
+        return Err((ErrorNotFound("not found"), req));
+    }
+
+    match &config.token {
+        // Token required.
+        Some(token) => match credentials {
+            // Valid token.
+            Some(creds) if creds.token() == token => Ok(req),
+            // Invalid token.
+            Some(_) => Err((ErrorUnauthorized("unauthorized"), req)),
+            // Missing token.
+            None => Err((ErrorBadRequest("missing bearer token"), req)),
+        },
+        // No token required.
+        None => Ok(req),
+    }
+}
+
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -134,7 +183,7 @@ async fn main() -> anyhow::Result<()> {
     env.add_global("cache_buster", Timestamp::now().as_second());
 
     // The closure is invoked every time the environment is outdated to recreate it.
-    let tmpl_reloader = AutoReloader::new(move |notifier| {
+    let reloader = AutoReloader::new(move |notifier| {
         let mut env = env.clone();
 
         // if watch_path is never called, no fs watcher is created
@@ -147,19 +196,43 @@ async fn main() -> anyhow::Result<()> {
         Ok(env)
     });
 
+    let registry = Registry::new();
+    let prometheus = PrometheusMetricsBuilder::new(NAMESPACE)
+        .registry(registry.clone())
+        .build()
+        .unwrap();
+
+    if config.metrics.enabled {
+        log::info!("enabling metrics endpoint at /metrics");
+        registry.register(Box::new(ProcessCollector::for_self()))?;
+        calendar.register_metrics(&registry)?;
+    }
+
     let calendar = Data::new(calendar);
-    let tmpl_reloader = Data::new(tmpl_reloader);
+    let reloader = Data::new(reloader);
+    let registry = Data::new(registry);
+    let metrics_config = Data::new(config.metrics.clone());
 
     log::info!("starting HTTP server at {}", config.server.listen_addr);
 
     HttpServer::new(move || {
         App::new()
             .app_data(calendar.clone())
-            .app_data(tmpl_reloader.clone())
+            .app_data(registry.clone())
+            .app_data(reloader.clone())
+            .app_data(metrics_config.clone())
+            .wrap(Condition::new(config.metrics.enabled, prometheus.clone()))
             .service(imprint)
             .service(events)
             .service(index)
             .service(Files::new("/static", "./static"))
+            .service(
+                // The scoping is a bit of a hack to limit the HttpAuthentication middleware to
+                // just the metrics endpoint.
+                web::scope("/metrics")
+                    .wrap(HttpAuthentication::with_fn(metrics_auth))
+                    .service(web::resource("").get(metrics)),
+            )
             .wrap(
                 ErrorHandlers::new()
                     .handler(StatusCode::NOT_FOUND, not_found)

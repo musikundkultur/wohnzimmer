@@ -10,6 +10,7 @@ use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use std::ops::Range;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
@@ -112,6 +113,7 @@ impl GoogleCalendarClient {
         let client = ClientBuilder::new(
             reqwest::Client::builder()
                 .default_headers(headers)
+                .timeout(Duration::from_secs(10))
                 .build()?,
         )
         .with(AuthMiddleware::new(token_source))

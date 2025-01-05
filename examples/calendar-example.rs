@@ -10,7 +10,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
 
-    let calendar = Calendar::new(GoogleCalendarEventSource::new().await?);
+    let calendar = Calendar::new(GoogleCalendarEventSource::new().await?)?;
     calendar.sync_once().await?;
 
     let now = Zoned::now();

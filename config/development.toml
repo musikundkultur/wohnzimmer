@@ -1,2 +1,5 @@
 [server]
 template_autoreload = true
+
+[metrics]
+enabled = true
