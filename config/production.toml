@@ -1,6 +1,10 @@
 [server]
 listen_addr = "0.0.0.0:8080"
 
+[metrics]
+# Bearer token was set manually via `flyctl secrets set WZ_METRICS__TOKEN=<token>`.
+enabled = true
+
 [site]
 canonical_url = "https://alhambra-luckenwalde.de"
 
