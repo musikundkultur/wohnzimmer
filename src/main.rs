@@ -199,6 +199,7 @@ async fn main() -> anyhow::Result<()> {
     let registry = Registry::new();
     let prometheus = PrometheusMetricsBuilder::new(NAMESPACE)
         .registry(registry.clone())
+        .mask_unmatched_patterns("<unmatched>")
         .build()
         .unwrap();
 
