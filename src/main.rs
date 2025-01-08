@@ -17,7 +17,9 @@ use actix_web_prom::PrometheusMetricsBuilder;
 use jiff::{Timestamp, ToSpan, Zoned};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
-use prometheus::{process_collector::ProcessCollector, Encoder, Registry, TextEncoder};
+#[cfg(target_os = "linux")]
+use prometheus::process_collector::ProcessCollector;
+use prometheus::{Encoder, Registry, TextEncoder};
 use tokio::time;
 use wohnzimmer::calendar::{Calendar, EventsByYear};
 use wohnzimmer::metrics::NAMESPACE;
@@ -205,6 +207,7 @@ async fn main() -> anyhow::Result<()> {
 
     if config.metrics.enabled {
         log::info!("enabling metrics endpoint at /metrics");
+        #[cfg(target_os = "linux")]
         registry.register(Box::new(ProcessCollector::for_self()))?;
         calendar.register_metrics(&registry)?;
     }
