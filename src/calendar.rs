@@ -2,7 +2,7 @@ pub mod google;
 pub mod templating;
 
 use super::Result;
-use crate::metrics::CalendarMetrics;
+use crate::metrics::{CalendarMetrics, CalendarSyncStatus};
 use crate::CalendarConfig;
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
@@ -209,20 +209,24 @@ impl Calendar {
     pub async fn sync_once(&self) -> Result<()> {
         log::debug!("synchronizing calendar events");
 
-        match self.event_source.fetch_events().await {
+        let (result, status) = match self.event_source.fetch_events().await {
             Ok(mut events) => {
-                self.metrics.calendar_syncs("success").inc();
-                self.metrics.calendar_events().set(events.len() as i64);
+                self.metrics.events().set(events.len() as i64);
+
                 // Ensure events are always sorted by date.
                 events.sort_by_key(|event| event.start_date);
                 *self.events.lock().await = events;
-                Ok(())
+
+                (Ok(()), CalendarSyncStatus::Success)
             }
-            Err(err) => {
-                self.metrics.calendar_syncs("error").inc();
-                Err(err)
-            }
-        }
+            Err(err) => (Err(err), CalendarSyncStatus::Error),
+        };
+
+        let now = Timestamp::now().as_second();
+        self.metrics.latest_sync_seconds(status).set(now);
+        self.metrics.syncs_total(status).inc();
+
+        result
     }
 
     /// Starts to periodically sync the calendar every `interval` until a message is received via
@@ -373,6 +377,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn calendar_sync() {
+        use CalendarSyncStatus::*;
+
         // A fake `EventSource` which just counts invocations of `fetch_events` and returns a fake
         // event.
         struct Counter(AtomicUsize);
@@ -399,15 +405,15 @@ mod tests {
         // Initially, there are no events because no sync happened.
         assert_eq!(calendar.get_events(range1.clone()).await.unwrap(), vec![]);
 
-        assert_eq!(calendar.metrics.calendar_events().get(), 0);
-        assert_eq!(calendar.metrics.calendar_syncs("success").get(), 0);
-        assert_eq!(calendar.metrics.calendar_syncs("error").get(), 0);
+        assert_eq!(calendar.metrics.events().get(), 0);
+        assert_eq!(calendar.metrics.syncs_total(Success).get(), 0);
+        assert_eq!(calendar.metrics.syncs_total(Error).get(), 0);
 
         calendar.sync_once().await.unwrap();
 
-        assert_eq!(calendar.metrics.calendar_events().get(), 1);
-        assert_eq!(calendar.metrics.calendar_syncs("success").get(), 1);
-        assert_eq!(calendar.metrics.calendar_syncs("error").get(), 0);
+        assert_eq!(calendar.metrics.events().get(), 1);
+        assert_eq!(calendar.metrics.syncs_total(Success).get(), 1);
+        assert_eq!(calendar.metrics.syncs_total(Error).get(), 0);
 
         assert_eq!(
             calendar.get_events(range1.clone()).await.unwrap(),
@@ -429,8 +435,8 @@ mod tests {
 
         // Manual `sync_one` above + initial sync + sync after 10ms = 3 syncs.
         assert_eq!(counter.0.load(Ordering::Relaxed), 3);
-        assert_eq!(calendar.metrics.calendar_syncs("success").get(), 3);
-        assert_eq!(calendar.metrics.calendar_syncs("error").get(), 0);
+        assert_eq!(calendar.metrics.syncs_total(Success).get(), 3);
+        assert_eq!(calendar.metrics.syncs_total(Error).get(), 0);
 
         tokio::time::sleep(Duration::from_millis(15)).await;
 
