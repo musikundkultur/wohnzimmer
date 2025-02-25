@@ -1,15 +1,15 @@
 use actix_files::Files;
-use actix_utils::future::{ready, Ready};
+use actix_utils::future::{Ready, ready};
 use actix_web::dev::{self, ServiceRequest, ServiceResponse};
 use actix_web::error::{
     ErrorBadRequest, ErrorInternalServerError, ErrorNotFound, ErrorUnauthorized,
 };
-use actix_web::http::header::{self, ContentType};
 use actix_web::http::StatusCode;
+use actix_web::http::header::{self, ContentType};
 use actix_web::middleware::{Compress, Condition, ErrorHandlerResponse, ErrorHandlers, Logger};
 use actix_web::web::{self, Data, Html};
 use actix_web::{
-    route, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+    App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, Result, route,
 };
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use actix_web_httpauth::middleware::HttpAuthentication;
@@ -62,7 +62,7 @@ async fn render_events(
     tmpl: &str,
     calendar: Data<Calendar>,
     months: i8,
-) -> Result<impl Responder> {
+) -> Result<impl Responder + use<>> {
     let now = Zoned::now();
     let start = now.start_of_day().unwrap();
     let end = &start + months.months();
