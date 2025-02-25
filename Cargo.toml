@@ -6,7 +6,7 @@ authors = ["Alhambra Luckenwalde <github@alhambra-luckenwalde.de>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/musikundkultur/wohnzimmer"
 readme = "README.md"
-edition = "2021"
+edition = "2024"
 exclude = [
     ".github/",
 ]

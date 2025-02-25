@@ -1,7 +1,8 @@
 use crate::Result;
 use prometheus::{
+    IntCounterVec, IntGauge, IntGaugeVec, Registry,
     core::{AtomicI64, AtomicU64, GenericCounter, GenericGauge},
-    opts, IntCounterVec, IntGauge, IntGaugeVec, Registry,
+    opts,
 };
 
 pub const NAMESPACE: &str = "wohnzimmer";

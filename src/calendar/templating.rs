@@ -1,5 +1,5 @@
 use super::Event;
-use jiff::{civil::Weekday, fmt::strtime, tz::TimeZone, SignedDuration, Zoned};
+use jiff::{SignedDuration, Zoned, civil::Weekday, fmt::strtime, tz::TimeZone};
 use minijinja::value::{Object, Value};
 use std::sync::Arc;
 

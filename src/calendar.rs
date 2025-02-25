@@ -2,20 +2,20 @@ pub mod google;
 pub mod templating;
 
 use super::Result;
-use crate::metrics::{CalendarMetrics, CalendarSyncStatus};
 use crate::CalendarConfig;
+use crate::metrics::{CalendarMetrics, CalendarSyncStatus};
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
-use jiff::{tz::TimeZone, Timestamp, ToSpan, Zoned};
+use jiff::{Timestamp, ToSpan, Zoned, tz::TimeZone};
 use prometheus::Registry;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io;
 use std::ops::Range;
 use std::sync::Arc;
-use tokio::sync::oneshot::{self, Receiver, Sender};
 use tokio::sync::Mutex;
+use tokio::sync::oneshot::{self, Receiver, Sender};
 use tokio::task::JoinHandle;
 use tokio::time::Duration;
 

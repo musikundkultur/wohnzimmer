@@ -5,7 +5,7 @@ use google_cloud_token::{TokenSource, TokenSourceProvider};
 use http::Extensions;
 use indexmap::IndexMap;
 use jiff::Timestamp;
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, AUTHORIZATION};
+use reqwest::header::{ACCEPT_ENCODING, AUTHORIZATION, HeaderMap, HeaderValue};
 use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use std::ops::Range;
