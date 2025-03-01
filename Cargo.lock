@@ -771,6 +771,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcloud-auth"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "059e4cb9bbfb037d0dc0ddce9d55debbec7615b0580322b454a8512b26e76ba8"
+dependencies = [
+ "async-trait",
+ "base64 0.21.7",
+ "gcloud-metadata",
+ "gcloud-token",
+ "home",
+ "jsonwebtoken",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.65",
+ "time",
+ "tokio",
+ "tracing",
+ "urlencoding",
+]
+
+[[package]]
+name = "gcloud-metadata"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d575310b4546530f6b21ee000c20155f11f9291fa0b67ea0949fd48aa49ed70"
+dependencies = [
+ "reqwest",
+ "thiserror 1.0.65",
+ "tokio",
+]
+
+[[package]]
+name = "gcloud-token"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84e20db637faf228be7bbf39a9e3ea3e36e6ead323662974f53926f21dcee39e"
+dependencies = [
+ "async-trait",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -798,48 +840,6 @@ name = "gimli"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4271d37baee1b8c7e4b708028c57d816cf9d2434acb33a549475f78c181f6253"
-
-[[package]]
-name = "google-cloud-auth"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e57a13fbacc5e9c41ded3ad8d0373175a6b7a6ad430d99e89d314ac121b7ab06"
-dependencies = [
- "async-trait",
- "base64 0.21.7",
- "google-cloud-metadata",
- "google-cloud-token",
- "home",
- "jsonwebtoken",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror 1.0.65",
- "time",
- "tokio",
- "tracing",
- "urlencoding",
-]
-
-[[package]]
-name = "google-cloud-metadata"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04f945a208886a13d07636f38fb978da371d0abc3e34bad338124b9f8c135a8f"
-dependencies = [
- "reqwest",
- "thiserror 1.0.65",
- "tokio",
-]
-
-[[package]]
-name = "google-cloud-token"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f49c12ba8b21d128a2ce8585955246977fbce4415f680ebf9199b6f9d6d725f"
-dependencies = [
- "async-trait",
-]
 
 [[package]]
 name = "h2"
@@ -2958,8 +2958,8 @@ dependencies = [
  "config",
  "dotenv",
  "env_logger",
- "google-cloud-auth",
- "google-cloud-token",
+ "gcloud-auth",
+ "gcloud-token",
  "http 1.2.0",
  "indexmap",
  "jiff",

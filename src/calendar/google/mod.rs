@@ -1,7 +1,7 @@
 pub mod models;
 
-use google_cloud_auth::token::DefaultTokenSourceProvider;
-use google_cloud_token::{TokenSource, TokenSourceProvider};
+use gcloud_auth::token::DefaultTokenSourceProvider;
+use gcloud_token::{TokenSource, TokenSourceProvider};
 use http::Extensions;
 use indexmap::IndexMap;
 use jiff::Timestamp;
@@ -16,7 +16,7 @@ use std::time::Duration;
 pub enum ClientError {
     /// Error while authenticating with google.
     #[error("failed to authenticate: {0}")]
-    GCloudAuth(#[from] google_cloud_auth::error::Error),
+    GCloudAuth(#[from] gcloud_auth::error::Error),
 
     /// Error while making a http request.
     #[error("failure requesting remote resource: {0}")]
@@ -101,7 +101,7 @@ impl GoogleCalendarClient {
         };
 
         let scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
-        let config = google_cloud_auth::project::Config::default().with_scopes(&scopes);
+        let config = gcloud_auth::project::Config::default().with_scopes(&scopes);
 
         let token_source = DefaultTokenSourceProvider::new(config)
             .await?
