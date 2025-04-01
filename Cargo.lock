@@ -787,14 +787,13 @@ dependencies = [
 
 [[package]]
 name = "gcloud-auth"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "059e4cb9bbfb037d0dc0ddce9d55debbec7615b0580322b454a8512b26e76ba8"
+checksum = "5fd8eea2ecfa2074d3b7b82f0bb03338f12a5299c9dbed5b9c7f23bc8d3d0059"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
  "gcloud-metadata",
- "gcloud-token",
  "home",
  "jsonwebtoken",
  "reqwest",
@@ -802,6 +801,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.65",
  "time",
+ "token-source",
  "tokio",
  "tracing",
  "urlencoding",
@@ -2360,6 +2360,15 @@ checksum = "9117f5d4db391c1cf6927e7bea3db74b9a1c1add8f7eda9ffd5364f40f57b82f"
 dependencies = [
  "displaydoc",
  "zerovec",
+]
+
+[[package]]
+name = "token-source"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75746ae15bef509f21039a652383104424208fdae172a964a8930858b9a78412"
+dependencies = [
+ "async-trait",
 ]
 
 [[package]]
