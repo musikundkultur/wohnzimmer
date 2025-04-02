@@ -1,7 +1,6 @@
 pub mod models;
 
 use gcloud_auth::token::DefaultTokenSourceProvider;
-use gcloud_token::{TokenSource, TokenSourceProvider};
 use http::Extensions;
 use indexmap::IndexMap;
 use jiff::Timestamp;
@@ -11,6 +10,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use std::ops::Range;
 use std::sync::Arc;
 use std::time::Duration;
+use token_source::{TokenSource, TokenSourceProvider};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {

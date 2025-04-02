@@ -819,15 +819,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gcloud-token"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84e20db637faf228be7bbf39a9e3ea3e36e6ead323662974f53926f21dcee39e"
-dependencies = [
- "async-trait",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3111,7 +3102,6 @@ dependencies = [
  "dotenv",
  "env_logger",
  "gcloud-auth",
- "gcloud-token",
  "http 1.3.1",
  "indexmap",
  "jiff",
@@ -3124,6 +3114,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.12",
+ "token-source",
  "tokio",
 ]
 
