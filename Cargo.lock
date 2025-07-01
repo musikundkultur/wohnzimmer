@@ -788,12 +788,12 @@ dependencies = [
 
 [[package]]
 name = "gcloud-auth"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fd8eea2ecfa2074d3b7b82f0bb03338f12a5299c9dbed5b9c7f23bc8d3d0059"
+checksum = "4089aeec499899f6f1309803279763c34d898ca86c1a3e4616cba3ca6bce34b7"
 dependencies = [
  "async-trait",
- "base64 0.21.7",
+ "base64 0.22.0",
  "gcloud-metadata",
  "home",
  "jsonwebtoken",
