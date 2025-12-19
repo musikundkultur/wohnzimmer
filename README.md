@@ -54,6 +54,13 @@ appropriate values:
   JSON Service Account Credentials obtained from the Google Cloud Console (see
   below).
 
+During local development you can use the
+[SOPS](https://github.com/getsops/sops)-encrypted secrets via:
+
+```sh
+sops exec-env secrets.sops.env 'cargo run'
+```
+
 #### Calendar Setup
 
 1. Create a new project in the [Google Cloud
