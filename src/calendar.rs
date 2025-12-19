@@ -28,6 +28,32 @@ pub struct Event {
     pub end_date: Option<Timestamp>,
     /// The event title.
     pub title: String,
+    /// The event description, if any.
+    pub description: Option<String>,
+}
+
+impl Event {
+    /// Converts the Markdown description to HTML.
+    fn convert_description(&mut self) {
+        let Some(description) = &self.description else {
+            return;
+        };
+
+        // We're using GitHub flavoured markdown to leverage the autolinks feature.
+        let options = markdown::Options::gfm();
+
+        match markdown::to_html_with_options(description, &options) {
+            Ok(html) => self.description = Some(html),
+            Err(err) => {
+                // Best effort: if the conversion failed the description is probably broken,
+                // but we leave it alone to avoid confusion and log an error instead.
+                log::error!(
+                    "failed to process markdown description for event '{}': {err}",
+                    self.title
+                );
+            }
+        }
+    }
 }
 
 impl fmt::Display for Event {
@@ -100,6 +126,7 @@ impl From<google::models::Event> for Event {
             start_date: ev.start.to_timestamp(),
             end_date: Some(ev.end.to_timestamp()),
             title: ev.summary,
+            description: ev.description,
         }
     }
 }
@@ -211,10 +238,15 @@ impl Calendar {
 
         let (result, status) = match self.event_source.fetch_events().await {
             Ok(mut events) => {
-                self.metrics.events().set(events.len() as i64);
+                // Eagerly convert all event descriptions so we don't need to do that upon every
+                // request later.
+                events.iter_mut().for_each(Event::convert_description);
 
                 // Ensure events are always sorted by date.
                 events.sort_by_key(|event| event.start_date);
+
+                self.metrics.events().set(events.len() as i64);
+
                 *self.events.lock().await = events;
 
                 (Ok(()), CalendarSyncStatus::Success)
@@ -306,6 +338,7 @@ mod tests {
                 title: $title.into(),
                 start_date: date!($y, $m, $d),
                 end_date: None,
+                description: None,
             }
         };
     }
@@ -391,6 +424,7 @@ mod tests {
                     title: "event".into(),
                     start_date: date!(2023, 1, 1),
                     end_date: None,
+                    description: None,
                 }])
             }
         }

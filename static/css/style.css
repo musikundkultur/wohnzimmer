@@ -40,7 +40,7 @@ body {
   background-color: #c21e1d;
   color: #ffffff;
   font-family: Lato, Arial, sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.5em;
   text-align: justify;
 }
@@ -170,30 +170,46 @@ a:hover {
   margin-right: auto;
   margin-top: 0;
   text-align: center;
-  width: 350px;
+  width: 620px;
 }
 
-.content .events table {
+.table {
   width: 100%;
 }
 
-.content .events th,
-.content .events td {
-  padding: 7px 2px;
+.table .row {
+  display: flex;
+  padding: 1em 0px;
 }
 
-.content .events th {
+.table .cell {
+  flex: 1;
+  padding: 0px 2px;
+  width: 50%;
+}
+
+.table .cell.event-date {
   text-align: left;
-  white-space: nowrap;
+  font-weight: bold;
 }
 
-.content .events th span {
+.table .cell.event-date span {
   display: block;
   font-weight: normal;
 }
 
-.content .events td {
+.table .cell.event-title {
   text-align: right;
+}
+
+.table .row.event-description {
+  display: block;
+  margin-top: -1em;
+  text-align: left;
+}
+
+.table .row.event-description p {
+  margin: 0.5em 0px;
 }
 
 .content .email {
@@ -244,8 +260,16 @@ body.error .header h2 {
 /* MEDIA QUERIES
 /*---------------------*/
 @media only screen and (max-width: 959px) {
+  body {
+    font-size: 16px;
+  }
+
   .container {
     width: 760px;
+  }
+
+  .content .events {
+    width: 500px;
   }
 
   .header h1:before,
@@ -261,9 +285,17 @@ body.error .header h2 {
 }
 
 @media only screen and (max-width: 767px) {
+  body {
+    font-size: 14px;
+  }
+
   .container {
     width: auto;
     margin: 0 20px;
+  }
+
+  .content .events {
+    width: 350px;
   }
 
   .header h1:before,

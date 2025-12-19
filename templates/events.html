@@ -6,14 +6,19 @@
     {% if events_by_year %}
     {% for year, events in events_by_year | items %}
     <h3>Termine {{ year }}</h3>
-    <table summary="Termine {{ year }}">
+    <div class="table" summary="Termine {{ year }}">
       {% for event in events %}
-      <tr>
-        <th>{{ event.date }}<span>{{ event.time }} Uhr</span></th>
-        <td>{{ event.title }}</td>
-      </tr>
+      <div class="row">
+        <div class="cell event-date">{{ event.date }}<span>{{ event.time }} Uhr</span></div>
+        <div class="cell event-title">{{ event.title }}</div>
+      </div>
+      {% if event.description %}
+      <div class="row event-description">
+        {{ event.description }}
+      </div>
+      {% endif %}
       {% endfor %}
-    </table>
+    </div>
     {% endfor %}
     {% else %}
     <h3>Termine</h3>
