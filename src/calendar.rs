@@ -32,30 +32,6 @@ pub struct Event {
     pub description: Option<String>,
 }
 
-impl Event {
-    /// Converts the Markdown description to HTML.
-    fn convert_description(&mut self) {
-        let Some(description) = &self.description else {
-            return;
-        };
-
-        // We're using GitHub flavoured markdown to leverage the autolinks feature.
-        let options = markdown::Options::gfm();
-
-        match markdown::to_html_with_options(description, &options) {
-            Ok(html) => self.description = Some(html),
-            Err(err) => {
-                // Best effort: if the conversion failed the description is probably broken,
-                // but we leave it alone to avoid confusion and log an error instead.
-                log::error!(
-                    "failed to process markdown description for event '{}': {err}",
-                    self.title
-                );
-            }
-        }
-    }
-}
-
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.title.fmt(f)
@@ -238,14 +214,10 @@ impl Calendar {
 
         let (result, status) = match self.event_source.fetch_events().await {
             Ok(mut events) => {
-                // Eagerly convert all event descriptions so we don't need to do that upon every
-                // request later.
-                events.iter_mut().for_each(Event::convert_description);
+                self.metrics.events().set(events.len() as i64);
 
                 // Ensure events are always sorted by date.
                 events.sort_by_key(|event| event.start_date);
-
-                self.metrics.events().set(events.len() as i64);
 
                 *self.events.lock().await = events;
 
