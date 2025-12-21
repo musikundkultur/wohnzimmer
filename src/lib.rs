@@ -7,6 +7,7 @@ use std::net::SocketAddr;
 use thiserror::Error;
 
 pub mod calendar;
+mod markdown;
 pub mod metrics;
 
 /// Result type used throughout this crate.

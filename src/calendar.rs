@@ -3,6 +3,7 @@ pub mod templating;
 
 use super::Result;
 use crate::CalendarConfig;
+use crate::markdown;
 use crate::metrics::{CalendarMetrics, CalendarSyncStatus};
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
@@ -29,6 +30,7 @@ pub struct Event {
     /// The event title.
     pub title: String,
     /// The event description, if any.
+    #[serde(deserialize_with = "markdown::deserialize_to_html")]
     pub description: Option<String>,
 }
 
@@ -102,7 +104,7 @@ impl From<google::models::Event> for Event {
             start_date: ev.start.to_timestamp(),
             end_date: Some(ev.end.to_timestamp()),
             title: ev.summary,
-            description: ev.description,
+            description: ev.description.and_then(markdown::to_html),
         }
     }
 }
@@ -218,7 +220,6 @@ impl Calendar {
 
                 // Ensure events are always sorted by date.
                 events.sort_by_key(|event| event.start_date);
-
                 *self.events.lock().await = events;
 
                 (Ok(()), CalendarSyncStatus::Success)
