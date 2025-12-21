@@ -11,12 +11,12 @@ pub(crate) fn to_html<T: AsRef<str>>(text: T) -> Option<String> {
 
     let document = dom_query::Document::fragment(html);
 
-    fix_anchor_elements(&document);
+    remove_empty_anchors(&document);
 
     Some(document.html_root().inner_html().to_string())
 }
 
-// Fixes weirdly shaped anchor elements.
+// Removes empty anchor elements.
 //
 // In combination with markdown's autolinks feature something like
 //
@@ -28,29 +28,8 @@ pub(crate) fn to_html<T: AsRef<str>>(text: T) -> Option<String> {
 //
 // We'll clean that up to
 //
-//   <a href="https://bar.foo.tld">https://foo.tld</a>
-fn fix_anchor_elements(document: &dom_query::Document) {
-    // We're looking for anchor elements with other sibling anchor elements.
-    for current in document.select("a + a").iter() {
-        if current.inner_html().is_empty() {
-            // We're not interested in links with empty HTML.
-            continue;
-        }
-
-        let previous = current.prev_sibling();
-
-        if previous.is("a") && previous.inner_html().is_empty() {
-            // The previous sibling is the empty anchor we're looking for. Replace it's HTML with
-            // the current anchor's HTML and remove the current node.
-            previous.set_html(current.inner_html());
-            current.remove();
-        }
-    }
-
-    // Now, remove other potentially empty anchor elements. This handles the very degenerate case
-    // where the initial text was something deeply nested like
-    //
-    //   <a href="https://baz.foo.tld"><a href="https://bar.foo.tld">https://foo.tld</a></a>
+//   <a href="https://foo.tld">https://foo.tld</a>
+fn remove_empty_anchors(document: &dom_query::Document) {
     for node in document.select("a").iter() {
         if node.inner_html().is_empty() {
             node.remove();
@@ -110,17 +89,22 @@ mod tests {
 
         assert_to_html!(
             "<a href=\"https://foo.musikundkultur.de\">https://musikundkultur.de</a>",
-            "<p><a href=\"https://foo.musikundkultur.de\">https://musikundkultur.de</a></p>",
+            "<p><a href=\"https://musikundkultur.de\">https://musikundkultur.de</a></p>",
         );
 
         assert_to_html!(
             "<a href=\"https://foo.musikundkultur.de\">https://musikundkultur.de</a> foo\n\n<a href=\"https://bar.musikundkultur.de\">https://musikundkultur.de</a>",
-            "<p><a href=\"https://foo.musikundkultur.de\">https://musikundkultur.de</a> foo</p>\n<p><a href=\"https://bar.musikundkultur.de\">https://musikundkultur.de</a></p>",
+            "<p><a href=\"https://musikundkultur.de\">https://musikundkultur.de</a> foo</p>\n<p><a href=\"https://musikundkultur.de\">https://musikundkultur.de</a></p>",
         );
 
         assert_to_html!(
             "<a href=\"https://foo.musikundkultur.de\"><a href=\"https://bar.musikundkultur.de\">https://musikundkultur.de</a></a>",
-            "<p><a href=\"https://bar.musikundkultur.de\">https://musikundkultur.de</a></p>",
+            "<p><a href=\"https://musikundkultur.de\">https://musikundkultur.de</a></p>",
+        );
+
+        assert_to_html!(
+            "<a href=\"https://foo.musikundkultur.de\"><a href=\"https://bar.musikundkultur.de\">Link</a></a>",
+            "<p><a href=\"https://bar.musikundkultur.de\">Link</a></p>",
         );
     }
 

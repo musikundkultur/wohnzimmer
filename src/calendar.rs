@@ -30,7 +30,7 @@ pub struct Event {
     /// The event title.
     pub title: String,
     /// The event description, if any.
-    #[serde(deserialize_with = "markdown::deserialize_to_html")]
+    #[serde(default, deserialize_with = "markdown::deserialize_to_html")]
     pub description: Option<String>,
 }
 
