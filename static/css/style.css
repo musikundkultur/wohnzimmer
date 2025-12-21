@@ -174,12 +174,13 @@ a:hover {
 }
 
 .table {
+  padding-bottom: 1em;
   width: 100%;
 }
 
 .table .row {
   display: flex;
-  padding: 1em 0px;
+  padding-top: 1em;
 }
 
 .table .cell {
@@ -202,14 +203,18 @@ a:hover {
   text-align: right;
 }
 
-.table .row.event-description {
+.table .event-description {
+  border-color: #fff;
+  border-width: 0px 0px 0px 1px;
+  border-style: solid;
   display: block;
-  margin-top: -1em;
+  padding-left: 1em;
+  margin-left: 0.5em;
   text-align: left;
 }
 
-.table .row.event-description p {
-  margin: 0.5em 0px;
+.table .event-description p {
+  margin: 0.5em 0em;
 }
 
 .content .email {
