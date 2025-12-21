@@ -7,8 +7,8 @@ impl Object for Event {
     fn get_value(self: &Arc<Self>, field: &Value) -> Option<Value> {
         let start_date = self.start_date.to_zoned(TimeZone::system());
 
-        let s = match field.as_str()? {
-            "date" => format_date(&start_date),
+        let value = match field.as_str()? {
+            "date" => Value::from(format_date(&start_date)),
             "time" => {
                 let start_time = format_time(&start_date);
                 let one_day = SignedDuration::from_hours(24);
@@ -17,22 +17,25 @@ impl Object for Event {
                     Some(end_date) => {
                         let end_time = format_time(&end_date);
 
-                        if start_date.duration_until(&end_date) >= one_day {
+                        let date = if start_date.duration_until(&end_date) >= one_day {
                             // More than 24h between start and end date, format end date and time.
                             format!("{start_time} - {} {end_time}", format_date(&end_date))
                         } else {
                             // Less than 24h between start and end date, just format the end time.
                             format!("{start_time} - {end_time}")
-                        }
+                        };
+
+                        Value::from(date)
                     }
-                    None => format!("{start_time}"),
+                    None => Value::from(format!("{start_time}")),
                 }
             }
-            "title" => self.title.clone(),
+            "title" => Value::from(&self.title),
+            "description" => return self.description.as_ref().map(Value::from),
             _ => return None,
         };
 
-        Some(Value::from(s))
+        Some(value)
     }
 }
 
@@ -90,6 +93,7 @@ mod tests {
                 start_date: $start_date,
                 end_date: $end_date,
                 title: "The event".into(),
+                description: None,
             })
         };
     }
