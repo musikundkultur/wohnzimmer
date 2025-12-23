@@ -1,7 +1,8 @@
 # This uses cargo-chef to cache dependencies in order to speed up docker builds.
 #
-# See: https://github.com/LukeMathWalker/cargo-chef
-FROM lukemathwalker/cargo-chef:latest-rust-1.92 AS chef
+# renovate: datasource=github-releases depName=rust-lang/rust
+ARG RUST_VERSION=1.92.0
+FROM lukemathwalker/cargo-chef:latest-rust-$RUST_VERSION AS chef
 WORKDIR /app
 
 ## Prepare
