@@ -38,7 +38,7 @@
       <ul>
         {%- for link in config.site.links %}
         <li>
-          <a href="{{ link.href }}">{{ link.title }}</a>
+          <a href="{{ link.href }}"{% if link.blank %} target="_blank"{% endif %}>{{ link.title }}</a>
         </li>
         {%- endfor %}
       </ul>

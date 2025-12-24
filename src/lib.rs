@@ -40,6 +40,9 @@ pub struct Link {
     /// links the first one wins.
     #[serde(default)]
     pub doors: bool,
+    /// Whether to add `target="_blank"` to the generated `a` tag or not.
+    #[serde(default)]
+    pub blank: bool,
 }
 
 /// Calendar configuration.
