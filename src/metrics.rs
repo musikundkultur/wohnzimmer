@@ -9,21 +9,31 @@ pub const NAMESPACE: &str = "wohnzimmer";
 
 /// Container for calendar metrics.
 pub(crate) struct CalendarMetrics {
-    events: IntGauge,
-    latest_sync_seconds: IntGaugeVec,
+    events: IntGaugeVec,
+    events_total: IntGauge,
+    latest_sync_timestamp_seconds: IntGaugeVec,
     syncs_total: IntCounterVec,
 }
 
 impl CalendarMetrics {
     /// Creates new CalendarMetrics.
     pub fn new() -> Result<CalendarMetrics> {
-        let events = IntGauge::with_opts(
+        let events = IntGaugeVec::new(
             opts!("calendar_events", "Number of events in the calendar").namespace(NAMESPACE),
+            &["detail"],
         )?;
 
-        let latest_sync_seconds = IntGaugeVec::new(
+        let events_total = IntGauge::with_opts(
             opts!(
-                "calendar_latest_sync_seconds",
+                "calendar_events_total",
+                "Total number of events in the calendar"
+            )
+            .namespace(NAMESPACE),
+        )?;
+
+        let latest_sync_timestamp_seconds = IntGaugeVec::new(
+            opts!(
+                "calendar_latest_sync_timestamp_seconds",
                 "UNIX timestamp seconds of the latest successful calendar sync"
             )
             .namespace(NAMESPACE),
@@ -41,7 +51,8 @@ impl CalendarMetrics {
 
         Ok(CalendarMetrics {
             events,
-            latest_sync_seconds,
+            events_total,
+            latest_sync_timestamp_seconds,
             syncs_total,
         })
     }
@@ -49,19 +60,28 @@ impl CalendarMetrics {
     /// Registers the metrics in a prometheus registry.
     pub fn register(&self, registry: &Registry) -> Result<()> {
         registry.register(Box::new(self.events.clone()))?;
-        registry.register(Box::new(self.latest_sync_seconds.clone()))?;
+        registry.register(Box::new(self.events_total.clone()))?;
+        registry.register(Box::new(self.latest_sync_timestamp_seconds.clone()))?;
         registry.register(Box::new(self.syncs_total.clone()))?;
         Ok(())
     }
 
     /// Provides access to the calendar events gauge.
-    pub fn events(&self) -> GenericGauge<AtomicI64> {
-        self.events.clone()
+    pub fn events(&self, detail: EventDetail) -> GenericGauge<AtomicI64> {
+        self.events.with_label_values(&[detail.as_str()])
+    }
+
+    /// Provides access to the total calendar events gauge.
+    pub fn events_total(&self) -> GenericGauge<AtomicI64> {
+        self.events_total.clone()
     }
 
     /// Provides access to the latest calendar sync UNIX timestamp gauge.
-    pub fn latest_sync_seconds(&self, status: CalendarSyncStatus) -> GenericGauge<AtomicI64> {
-        self.latest_sync_seconds
+    pub fn latest_sync_timestamp_seconds(
+        &self,
+        status: CalendarSyncStatus,
+    ) -> GenericGauge<AtomicI64> {
+        self.latest_sync_timestamp_seconds
             .with_label_values(&[status.as_str()])
     }
 
@@ -86,6 +106,25 @@ impl CalendarSyncStatus {
         match self {
             CalendarSyncStatus::Success => "success",
             CalendarSyncStatus::Error => "error",
+        }
+    }
+}
+
+/// Level of detail calendar events provide.
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum EventDetail {
+    /// Events with description.
+    Desc,
+    /// Simple events without description.
+    Simple,
+}
+
+impl EventDetail {
+    /// Returns the detail level as a &str.
+    pub fn as_str(&self) -> &str {
+        match self {
+            EventDetail::Desc => "description",
+            EventDetail::Simple => "simple",
         }
     }
 }
