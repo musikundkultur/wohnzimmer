@@ -2,7 +2,7 @@
 #
 # renovate: datasource=github-releases depName=rust-lang/rust
 ARG RUST_VERSION=1.92.0
-FROM lukemathwalker/cargo-chef:latest-rust-$RUST_VERSION AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-${RUST_VERSION}-bookworm AS chef
 WORKDIR /app
 
 ## Prepare
