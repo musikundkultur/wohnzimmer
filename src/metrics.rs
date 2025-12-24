@@ -1,8 +1,8 @@
 use crate::Result;
 use prometheus::{
-    IntCounterVec, IntGauge, IntGaugeVec, Registry,
+    Histogram, HistogramVec, IntCounterVec, IntGauge, IntGaugeVec, Registry,
     core::{AtomicI64, AtomicU64, GenericCounter, GenericGauge},
-    opts,
+    histogram_opts, opts,
 };
 
 pub const NAMESPACE: &str = "wohnzimmer";
@@ -12,6 +12,7 @@ pub(crate) struct CalendarMetrics {
     events: IntGaugeVec,
     events_total: IntGauge,
     latest_sync_timestamp_seconds: IntGaugeVec,
+    sync_duration_seconds: HistogramVec,
     syncs_total: IntCounterVec,
 }
 
@@ -40,6 +41,15 @@ impl CalendarMetrics {
             &["status"],
         )?;
 
+        let sync_duration_seconds = HistogramVec::new(
+            histogram_opts!(
+                "calendar_sync_duration_seconds",
+                "Calendar sync duration in seconds"
+            )
+            .namespace(NAMESPACE),
+            &["status"],
+        )?;
+
         let syncs_total = IntCounterVec::new(
             opts!(
                 "calendar_syncs_total",
@@ -53,6 +63,7 @@ impl CalendarMetrics {
             events,
             events_total,
             latest_sync_timestamp_seconds,
+            sync_duration_seconds,
             syncs_total,
         })
     }
@@ -62,6 +73,7 @@ impl CalendarMetrics {
         registry.register(Box::new(self.events.clone()))?;
         registry.register(Box::new(self.events_total.clone()))?;
         registry.register(Box::new(self.latest_sync_timestamp_seconds.clone()))?;
+        registry.register(Box::new(self.sync_duration_seconds.clone()))?;
         registry.register(Box::new(self.syncs_total.clone()))?;
         Ok(())
     }
@@ -82,6 +94,12 @@ impl CalendarMetrics {
         status: CalendarSyncStatus,
     ) -> GenericGauge<AtomicI64> {
         self.latest_sync_timestamp_seconds
+            .with_label_values(&[status.as_str()])
+    }
+
+    /// Provides access to the calendar sync duration seconds histogram.
+    pub fn sync_duration_seconds(&self, status: CalendarSyncStatus) -> Histogram {
+        self.sync_duration_seconds
             .with_label_values(&[status.as_str()])
     }
 
