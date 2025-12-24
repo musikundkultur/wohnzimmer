@@ -199,6 +199,19 @@ impl Calendar {
         self.metrics.events_total().set(events.len() as i64);
     }
 
+    /// Records metrics for a calendar sync operation.
+    fn record_sync_metrics(&self, start: Timestamp, status: CalendarSyncStatus) {
+        let end = Timestamp::now();
+
+        self.metrics
+            .latest_sync_timestamp_seconds(status)
+            .set(end.as_second());
+        self.metrics
+            .sync_duration_seconds(status)
+            .observe(end.duration_since(start).as_secs_f64());
+        self.metrics.syncs_total(status).inc();
+    }
+
     /// Filters events between a start date (inclusive) and an end date (exclusive).
     pub async fn get_events(&self, range: Range<Timestamp>) -> Result<Vec<Event>> {
         let events = self.events.lock().await.clone();
@@ -232,6 +245,8 @@ impl Calendar {
     pub async fn sync_once(&self) -> Result<()> {
         log::debug!("synchronizing calendar events");
 
+        let start = Timestamp::now();
+
         let (result, status) = match self.event_source.fetch_events().await {
             Ok(mut events) => {
                 self.record_event_metrics(&events);
@@ -245,9 +260,7 @@ impl Calendar {
             Err(err) => (Err(err), CalendarSyncStatus::Error),
         };
 
-        let now = Timestamp::now().as_second();
-        self.metrics.latest_sync_timestamp_seconds(status).set(now);
-        self.metrics.syncs_total(status).inc();
+        self.record_sync_metrics(start, status);
 
         result
     }
