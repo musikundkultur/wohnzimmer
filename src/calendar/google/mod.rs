@@ -134,32 +134,23 @@ impl GoogleCalendarClient {
         &self,
         date_range: Option<Range<Timestamp>>,
         event_count: Option<u32>,
-        next_page_token: Option<String>,
-    ) -> Result<(Vec<models::Event>, Option<String>), ClientError> {
+        next_page_token: Option<&str>,
+    ) -> Result<models::Events, ClientError> {
         let events_request = self.client.get(format!(
             "https://www.googleapis.com/calendar/v3/calendars/{}/events",
             self.calendar_id
         ));
 
-        let query = build_query_parameters(&date_range, &event_count, &next_page_token);
+        let query = build_query_parameters(date_range, event_count, next_page_token);
 
-        let events = events_request
-            .query(&query)
-            .send()
-            .await?
-            .json::<models::Events>()
-            .await?;
-
-        log::debug!("fetched {} events from Google Calendar", events.items.len());
-
-        Ok((events.items, events.next_page_token))
+        Ok(events_request.query(&query).send().await?.json().await?)
     }
 }
 
 fn build_query_parameters(
-    date_range: &Option<Range<Timestamp>>,
-    event_count: &Option<u32>,
-    next_page_token: &Option<String>,
+    date_range: Option<Range<Timestamp>>,
+    event_count: Option<u32>,
+    next_page_token: Option<&str>,
 ) -> IndexMap<&'static str, String> {
     // Google requires rfc3339 format for the times with a fixed offset
     // see: https://developers.google.com/calendar/api/v3/reference/events/list
@@ -184,7 +175,7 @@ fn build_query_parameters(
 
     if let Some(token) = next_page_token {
         // page token returned by previous request to fetch the next page
-        query_parameters.insert("pageToken", token.clone());
+        query_parameters.insert("pageToken", token.to_owned());
     }
 
     query_parameters
@@ -196,7 +187,7 @@ mod tests {
 
     #[test]
     fn build_query_parameters_without_parameters() {
-        let query_parameters = build_query_parameters(&None, &None, &None);
+        let query_parameters = build_query_parameters(None, None, None);
 
         let expected_parameters =
             IndexMap::from([("singleEvents", "true"), ("orderBy", "startTime")]);
@@ -208,7 +199,7 @@ mod tests {
         let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
         let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
-        let query_parameters = build_query_parameters(&Some(start_date..end_date), &None, &None);
+        let query_parameters = build_query_parameters(Some(start_date..end_date), None, None);
 
         let expected_parameters = IndexMap::from([
             ("singleEvents", "true".to_owned()),
@@ -225,8 +216,7 @@ mod tests {
         let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
         let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
-        let query_parameters =
-            build_query_parameters(&Some(start_date..end_date), &Some(30), &None);
+        let query_parameters = build_query_parameters(Some(start_date..end_date), Some(30), None);
 
         let expected_parameters = IndexMap::from([
             ("singleEvents", "true"),
@@ -245,7 +235,7 @@ mod tests {
         let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
         let query_parameters =
-            build_query_parameters(&Some(start_date..end_date), &None, &Some("abcd".to_owned()));
+            build_query_parameters(Some(start_date..end_date), None, Some("abcd"));
 
         let expected_parameters = IndexMap::from([
             ("singleEvents", "true"),
@@ -263,11 +253,8 @@ mod tests {
         let start_date = "1996-12-19T16:39:57-08:00".parse().unwrap();
         let end_date = "1996-12-19T16:39:57-09:00".parse().unwrap();
 
-        let query_parameters = build_query_parameters(
-            &Some(start_date..end_date),
-            &Some(30),
-            &Some("abcd".to_owned()),
-        );
+        let query_parameters =
+            build_query_parameters(Some(start_date..end_date), Some(30), Some("abcd"));
 
         let expected_parameters = IndexMap::from([
             ("singleEvents", "true"),

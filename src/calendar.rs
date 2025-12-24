@@ -116,12 +116,29 @@ impl EventSource for GoogleCalendarEventSource {
         let start = now.start_of_day().unwrap();
         let end = &start + 12.months();
 
-        let events = self
-            .client
-            .get_events(Some(start.timestamp()..end.timestamp()), None, None)
-            .await?;
+        let mut events = Vec::new();
+        let mut next_page_token = None;
 
-        Ok(events.0.into_iter().map(Into::into).collect())
+        loop {
+            let date_range = start.timestamp()..end.timestamp();
+
+            let resp = self
+                .client
+                .get_events(Some(date_range), None, next_page_token.as_deref())
+                .await?;
+
+            events.extend(resp.items.into_iter().map(Event::from));
+
+            if resp.next_page_token.is_none() {
+                break;
+            }
+
+            next_page_token = resp.next_page_token;
+        }
+
+        log::debug!("fetched {} events from Google Calendar", events.len());
+
+        Ok(events)
     }
 }
 
