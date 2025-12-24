@@ -36,6 +36,10 @@ pub struct Link {
     pub title: String,
     /// The URL that it points to.
     pub href: String,
+    /// Whether the doors on the homepage should link here or not. If this is `true` for multiple
+    /// links the first one wins.
+    #[serde(default)]
+    pub doors: bool,
 }
 
 /// Calendar configuration.
