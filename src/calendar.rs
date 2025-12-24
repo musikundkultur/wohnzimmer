@@ -4,7 +4,7 @@ pub mod templating;
 use super::Result;
 use crate::CalendarConfig;
 use crate::markdown;
-use crate::metrics::{CalendarMetrics, CalendarSyncStatus};
+use crate::metrics::{CalendarMetrics, CalendarSyncStatus, EventDetail};
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
@@ -181,6 +181,24 @@ impl Calendar {
         self.metrics.register(registry)
     }
 
+    /// Records metrics for a slice of events.
+    fn record_event_metrics(&self, events: &[Event]) {
+        use EventDetail::*;
+
+        // Count events with and without description.
+        let (desc, simple) = events.iter().fold((0, 0), |(desc, simple), event| {
+            if event.description.is_some() {
+                (desc + 1, simple)
+            } else {
+                (desc, simple + 1)
+            }
+        });
+
+        self.metrics.events(Desc).set(desc);
+        self.metrics.events(Simple).set(simple);
+        self.metrics.events_total().set(events.len() as i64);
+    }
+
     /// Filters events between a start date (inclusive) and an end date (exclusive).
     pub async fn get_events(&self, range: Range<Timestamp>) -> Result<Vec<Event>> {
         let events = self.events.lock().await.clone();
@@ -216,7 +234,7 @@ impl Calendar {
 
         let (result, status) = match self.event_source.fetch_events().await {
             Ok(mut events) => {
-                self.metrics.events().set(events.len() as i64);
+                self.record_event_metrics(&events);
 
                 // Ensure events are always sorted by date.
                 events.sort_by_key(|event| event.start_date);
@@ -228,7 +246,7 @@ impl Calendar {
         };
 
         let now = Timestamp::now().as_second();
-        self.metrics.latest_sync_seconds(status).set(now);
+        self.metrics.latest_sync_timestamp_seconds(status).set(now);
         self.metrics.syncs_total(status).inc();
 
         result
@@ -384,6 +402,7 @@ mod tests {
     #[actix_rt::test]
     async fn calendar_sync() {
         use CalendarSyncStatus::*;
+        use EventDetail::*;
 
         // A fake `EventSource` which just counts invocations of `fetch_events` and returns a fake
         // event.
@@ -412,13 +431,17 @@ mod tests {
         // Initially, there are no events because no sync happened.
         assert_eq!(calendar.get_events(range1.clone()).await.unwrap(), vec![]);
 
-        assert_eq!(calendar.metrics.events().get(), 0);
+        assert_eq!(calendar.metrics.events(Simple).get(), 0);
+        assert_eq!(calendar.metrics.events(Desc).get(), 0);
+        assert_eq!(calendar.metrics.events_total().get(), 0);
         assert_eq!(calendar.metrics.syncs_total(Success).get(), 0);
         assert_eq!(calendar.metrics.syncs_total(Error).get(), 0);
 
         calendar.sync_once().await.unwrap();
 
-        assert_eq!(calendar.metrics.events().get(), 1);
+        assert_eq!(calendar.metrics.events(Simple).get(), 1);
+        assert_eq!(calendar.metrics.events(Desc).get(), 0);
+        assert_eq!(calendar.metrics.events_total().get(), 1);
         assert_eq!(calendar.metrics.syncs_total(Success).get(), 1);
         assert_eq!(calendar.metrics.syncs_total(Error).get(), 0);
 
