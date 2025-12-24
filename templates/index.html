@@ -4,7 +4,12 @@
 
 {% block before_events %}
 <div class="doors">
-  <a href="https://www.facebook.com/musikundkultur" title="Alhambra Luckenwalde auf Facebook">Reinspaziert</a>
+  {%- set doors_link = config.site.links | selectattr("doors") | first %}
+  {%- if doors_link %}
+  <a href="{{ doors_link.href }}" title="Alhambra Luckenwalde ({{ doors_link.title }})">Reinspaziert</a>
+  {%- else %}
+  <a title="Alhambra Luckenwalde">Reinspaziert</a>
+  {%- endif %}
 </div>
 {% endblock %}
 
