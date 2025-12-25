@@ -13,11 +13,13 @@ description = "Der Musik- und Kulturf√∂rderverein e.V. veranstaltet und unterst√
 [[site.links]]
 title = "Instagram"
 href = "https://www.instagram.com/alhambra_luckenwalde"
+blank = true
 doors = true
 
 [[site.links]]
 title = "Facebook"
 href = "https://www.facebook.com/musikundkultur"
+blank = true
 
 [[site.links]]
 title = "Impressum"

@@ -6,7 +6,7 @@
 <div class="doors">
   {%- set doors_link = config.site.links | selectattr("doors") | first %}
   {%- if doors_link %}
-  <a href="{{ doors_link.href }}" title="Alhambra Luckenwalde ({{ doors_link.title }})">Reinspaziert</a>
+  <a href="{{ doors_link.href }}"{% if doors_link.blank %} target="_blank"{% endif %} title="Alhambra Luckenwalde ({{ doors_link.title }})">Reinspaziert</a>
   {%- else %}
   <a title="Alhambra Luckenwalde">Reinspaziert</a>
   {%- endif %}
