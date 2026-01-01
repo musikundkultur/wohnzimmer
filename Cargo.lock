@@ -1518,9 +1518,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja"
-version = "2.13.0"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0adbe6e92a6ce0fd6c4aac593fdfd3e3950b0f61b1a63aa9731eb6fd85776fa3"
+checksum = "12ea9ac0a51fb5112607099560fdf0f90366ab088a2a9e6e8ae176794e9806aa"
 dependencies = [
  "memo-map",
  "self_cell",
@@ -1529,9 +1529,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja-autoreload"
-version = "2.13.0"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7dbeb469832618faff49204fde310bac88ce6f66a7832bbc7f5740e3176b376"
+checksum = "8b3b3e03fd996419103425efd6895e77b9c08c61b65965787dd35b0213ca22b5"
 dependencies = [
  "minijinja",
  "notify",
