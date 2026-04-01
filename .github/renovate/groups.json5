@@ -2,9 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
-      "description": "Rust minijinja crates",
-      "groupName": "rust minijinja crates",
-      "matchPackagePatterns": ["minijinja", "minijinja-autoreload"],
+      "description": "minijinja crates",
+      "groupName": "minijinja crates",
+      "matchPackagePatterns": ["/^minijinja/"],
+      "matchDatasources": ["cargo"],
+      "versioning": "semver",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      },
+      "separateMinorPatch": true
+    },
+    {
+      "description": "reqwest crates",
+      "groupName": "reqwest crates",
+      "matchPackagePatterns": ["/^reqwest/"],
       "matchDatasources": ["cargo"],
       "versioning": "semver",
       "group": {
