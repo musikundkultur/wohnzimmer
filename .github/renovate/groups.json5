@@ -6,7 +6,6 @@
       "groupName": "minijinja crates",
       "matchPackageNames": ["/minijinja/"],
       "matchDatasources": ["cargo"],
-      "versioning": "semver",
       "group": {
         "commitMessageTopic": "{{{groupName}}}"
       },
@@ -17,7 +16,6 @@
       "groupName": "reqwest crates",
       "matchPackageNames": ["/reqwest/"],
       "matchDatasources": ["cargo"],
-      "versioning": "semver",
       "group": {
         "commitMessageTopic": "{{{groupName}}}"
       },
