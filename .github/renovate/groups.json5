@@ -2,9 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
-      "description": "minijinja crates",
+      "description": ["minijinja crates"],
       "groupName": "minijinja crates",
-      "matchPackagePatterns": ["/minijinja/"],
+      "matchPackageNames": ["/minijinja/"],
       "matchDatasources": ["cargo"],
       "versioning": "semver",
       "group": {
@@ -13,9 +13,9 @@
       "separateMinorPatch": true
     },
     {
-      "description": "reqwest crates",
+      "description": ["reqwest crates"],
       "groupName": "reqwest crates",
-      "matchPackagePatterns": ["/reqwest/"],
+      "matchPackageNames": ["/reqwest/"],
       "matchDatasources": ["cargo"],
       "versioning": "semver",
       "group": {
