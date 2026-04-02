@@ -5,7 +5,7 @@
       "description": ["minijinja crates"],
       "groupName": "minijinja crates",
       "matchPackageNames": ["/minijinja/"],
-      "matchDatasources": ["cargo"],
+      "matchManagers": ["cargo"],
       "group": {
         "commitMessageTopic": "{{{groupName}}}"
       },
@@ -15,7 +15,7 @@
       "description": ["reqwest crates"],
       "groupName": "reqwest crates",
       "matchPackageNames": ["/reqwest/"],
-      "matchDatasources": ["cargo"],
+      "matchManagers": ["cargo"],
       "group": {
         "commitMessageTopic": "{{{groupName}}}"
       },
