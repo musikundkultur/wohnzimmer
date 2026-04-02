@@ -4,7 +4,7 @@
     {
       "description": "minijinja crates",
       "groupName": "minijinja crates",
-      "matchPackagePatterns": ["/^minijinja/"],
+      "matchPackagePatterns": ["/minijinja/"],
       "matchDatasources": ["cargo"],
       "versioning": "semver",
       "group": {
@@ -15,7 +15,7 @@
     {
       "description": "reqwest crates",
       "groupName": "reqwest crates",
-      "matchPackagePatterns": ["/^reqwest/"],
+      "matchPackagePatterns": ["/reqwest/"],
       "matchDatasources": ["cargo"],
       "versioning": "semver",
       "group": {
