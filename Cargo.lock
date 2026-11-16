@@ -981,7 +981,7 @@ dependencies = [
  "fnv",
  "futures-core",
  "futures-sink",
- "http 1.4.0",
+ "http 1.5.0",
  "indexmap",
  "slab",
  "tokio",
@@ -1033,9 +1033,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3ba2a386d7f85a81f119ad7498ebe444d2e22c2af0b86b069416ace48b3311a"
+checksum = "918d3568bebf352712bc2ef3d46a8bcf1a75b373be6539de198e9105cbbf9ce0"
 dependencies = [
  "bytes",
  "itoa",
@@ -1048,7 +1048,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes",
- "http 1.4.0",
+ "http 1.5.0",
 ]
 
 [[package]]
@@ -1059,7 +1059,7 @@ checksum = "793429d76616a256bcb62c2a2ec2bed781c8307e797e2598c50010f2bee2544f"
 dependencies = [
  "bytes",
  "futures-util",
- "http 1.4.0",
+ "http 1.5.0",
  "http-body",
  "pin-project-lite",
 ]
@@ -1092,7 +1092,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "h2 0.4.7",
- "http 1.4.0",
+ "http 1.5.0",
  "http-body",
  "httparse",
  "itoa",
@@ -1109,7 +1109,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d191583f3da1305256f22463b9bb0471acad48a4e534a5218b9963e9c1f59b2"
 dependencies = [
  "futures-util",
- "http 1.4.0",
+ "http 1.5.0",
  "hyper",
  "hyper-util",
  "rustls",
@@ -1130,7 +1130,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "http 1.4.0",
+ "http 1.5.0",
  "http-body",
  "hyper",
  "ipnet",
@@ -2125,7 +2125,7 @@ dependencies = [
  "encoding_rs",
  "futures-core",
  "h2 0.4.7",
- "http 1.4.0",
+ "http 1.5.0",
  "http-body",
  "http-body-util",
  "hyper",
@@ -2163,7 +2163,7 @@ checksum = "199dda04a536b532d0cc04d7979e39b1c763ea749bf91507017069c00b96056f"
 dependencies = [
  "anyhow",
  "async-trait",
- "http 1.4.0",
+ "http 1.5.0",
  "reqwest",
  "serde",
  "thiserror 2.0.18",
@@ -2835,7 +2835,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-util",
- "http 1.4.0",
+ "http 1.5.0",
  "http-body",
  "http-body-util",
  "iri-string",
@@ -3534,7 +3534,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "gcloud-auth",
- "http 1.4.0",
+ "http 1.5.0",
  "indexmap",
  "jiff",
  "log",
