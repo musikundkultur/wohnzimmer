@@ -1,5 +1,4 @@
 use actix_files::Files;
-use actix_utils::future::{Ready, ready};
 use actix_web::dev::{self, ServiceRequest, ServiceResponse};
 use actix_web::error::{
     ErrorBadRequest, ErrorInternalServerError, ErrorNotFound, ErrorUnauthorized,
@@ -14,6 +13,7 @@ use actix_web::{
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use actix_web_httpauth::middleware::HttpAuthentication;
 use actix_web_prom::PrometheusMetricsBuilder;
+use core::future::{Ready, ready};
 use jiff::{Timestamp, ToSpan, ZonedDateTime};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
