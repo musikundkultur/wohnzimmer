@@ -29,7 +29,11 @@ impl Timepoint {
     pub fn to_timestamp(&self) -> Timestamp {
         self.date_time.unwrap_or_else(|| {
             self.date
-                .and_then(|date| date.at(0, 0, 0, 0).to_zoned(TimeZone::system()).ok())
+                .and_then(|date| {
+                    date.at(0, 0, 0, 0)
+                        .to_zoned_datetime(TimeZone::system())
+                        .ok()
+                })
                 .map(|zoned| zoned.timestamp())
                 .unwrap_or_default()
         })

@@ -14,7 +14,7 @@ use actix_web::{
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use actix_web_httpauth::middleware::HttpAuthentication;
 use actix_web_prom::PrometheusMetricsBuilder;
-use jiff::{Timestamp, ToSpan, Zoned};
+use jiff::{Timestamp, ToSpan, ZonedDateTime};
 use minijinja::value::Value;
 use minijinja_autoreload::AutoReloader;
 #[cfg(target_os = "linux")]
@@ -63,7 +63,7 @@ async fn render_events(
     calendar: Data<Calendar>,
     months: i8,
 ) -> Result<impl Responder + use<>> {
-    let now = Zoned::now();
+    let now = ZonedDateTime::now();
     let start = now.start_of_day().unwrap();
     let end = &start + months.months();
 

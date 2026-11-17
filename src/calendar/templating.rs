@@ -1,11 +1,11 @@
 use super::Event;
-use jiff::{SignedDuration, Zoned, civil::Weekday, fmt::strtime, tz::TimeZone};
+use jiff::{SignedDuration, ZonedDateTime, civil::Weekday, fmt::strtime, tz::TimeZone};
 use minijinja::value::{Object, Value};
 use std::sync::Arc;
 
 impl Object for Event {
     fn get_value(self: &Arc<Self>, field: &Value) -> Option<Value> {
-        let start_date = self.start_date.to_zoned(TimeZone::system());
+        let start_date = self.start_date.to_zoned_datetime(TimeZone::system());
 
         let value = match field.as_str()? {
             "date" => Value::from(format_date(&start_date)),
@@ -13,7 +13,10 @@ impl Object for Event {
                 let start_time = format_time(&start_date);
                 let one_day = SignedDuration::from_hours(24);
 
-                match self.end_date.map(|ts| ts.to_zoned(TimeZone::system())) {
+                match self
+                    .end_date
+                    .map(|ts| ts.to_zoned_datetime(TimeZone::system()))
+                {
                     Some(end_date) => {
                         let end_time = format_time(&end_date);
 
@@ -39,11 +42,11 @@ impl Object for Event {
     }
 }
 
-fn format_time(date: &Zoned) -> strtime::Display<'_> {
+fn format_time(date: &ZonedDateTime) -> strtime::Display<'_> {
     date.strftime("%H:%M")
 }
 
-fn format_date(date: &Zoned) -> String {
+fn format_date(date: &ZonedDateTime) -> String {
     format!(
         "{}, {}. {}",
         german_weekday(date),
@@ -52,7 +55,7 @@ fn format_date(date: &Zoned) -> String {
     )
 }
 
-fn german_weekday(date: &Zoned) -> &'static str {
+fn german_weekday(date: &ZonedDateTime) -> &'static str {
     match date.weekday() {
         Weekday::Monday => "Mo",
         Weekday::Tuesday => "Di",
@@ -64,7 +67,7 @@ fn german_weekday(date: &Zoned) -> &'static str {
     }
 }
 
-fn german_month_name(date: &Zoned) -> &'static str {
+fn german_month_name(date: &ZonedDateTime) -> &'static str {
     match date.month() {
         1 => "Januar",
         2 => "Februar",
@@ -98,9 +101,9 @@ mod tests {
         };
     }
 
-    macro_rules! zoned {
+    macro_rules! zoned_datetime {
         ($ts:expr) => {
-            $ts.to_zoned(TimeZone::system())
+            $ts.to_zoned_datetime(TimeZone::system())
         };
     }
 
@@ -113,7 +116,7 @@ mod tests {
     #[test]
     fn custom_date_formatting() {
         let timestamp: Timestamp = "2025-03-05T18:00:00Z".parse().unwrap();
-        let date = timestamp.to_zoned(TimeZone::UTC);
+        let date = timestamp.to_zoned_datetime(TimeZone::UTC);
         assert_eq!(format_date(&date), "Mi, 5. März");
         assert_eq!(format_time(&date).to_string(), "18:00");
     }
@@ -121,7 +124,7 @@ mod tests {
     #[test]
     fn event_basics() {
         let event = event!("2025-02-05T18:00:00Z".parse().unwrap(), None);
-        let expected_date = format_date(&zoned!(event.start_date));
+        let expected_date = format_date(&zoned_datetime!(event.start_date));
         assert_field_value!(event, "title", &event.title);
         assert_field_value!(event, "date", expected_date);
     }
@@ -129,7 +132,7 @@ mod tests {
     #[test]
     fn event_time_without_end_date() {
         let event = event!("2025-02-05T18:00:00Z".parse().unwrap(), None);
-        let expected_time = format_time(&zoned!(event.start_date)).to_string();
+        let expected_time = format_time(&zoned_datetime!(event.start_date)).to_string();
         assert_field_value!(event, "time", expected_time);
     }
 
@@ -143,8 +146,8 @@ mod tests {
         let event = event!(start_date, Some(end_date));
         let expected_time = format!(
             "{} - {}",
-            format_time(&zoned!(start_date)),
-            format_time(&zoned!(end_date))
+            format_time(&zoned_datetime!(start_date)),
+            format_time(&zoned_datetime!(end_date))
         );
 
         assert_field_value!(event, "time", expected_time);
@@ -155,9 +158,9 @@ mod tests {
         let event = event!(start_date, Some(end_date));
         let expected_time = format!(
             "{} - {} {}",
-            format_time(&zoned!(start_date)),
-            format_date(&zoned!(end_date)),
-            format_time(&zoned!(end_date))
+            format_time(&zoned_datetime!(start_date)),
+            format_date(&zoned_datetime!(end_date)),
+            format_time(&zoned_datetime!(end_date))
         );
 
         assert_field_value!(event, "time", expected_time);

@@ -8,7 +8,7 @@ use crate::metrics::{CalendarMetrics, CalendarSyncStatus, EventDetail};
 use async_trait::async_trait;
 use google::GoogleCalendarClient;
 use indexmap::IndexMap;
-use jiff::{Timestamp, ToSpan, Zoned, tz::TimeZone};
+use jiff::{Timestamp, ToSpan, ZonedDateTime, tz::TimeZone};
 use prometheus::Registry;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -112,7 +112,7 @@ impl From<google::models::Event> for Event {
 #[async_trait]
 impl EventSource for GoogleCalendarEventSource {
     async fn fetch_events(&self) -> Result<Vec<Event>> {
-        let now = Zoned::now();
+        let now = ZonedDateTime::now();
         let start = now.start_of_day().unwrap();
         let end = &start + 12.months();
 
@@ -248,7 +248,7 @@ impl Calendar {
         let mut events_by_year: EventsByYear = IndexMap::new();
 
         events.into_iter().for_each(|event| {
-            let start_date = event.start_date.to_zoned(TimeZone::system());
+            let start_date = event.start_date.to_zoned_datetime(TimeZone::system());
             events_by_year
                 .entry(start_date.year())
                 .or_default()
@@ -347,7 +347,7 @@ mod tests {
     macro_rules! date {
         ($y:expr, $m:expr, $d:expr) => {
             datetime($y, $m, $d, 0, 0, 0, 0)
-                .to_zoned(TimeZone::system())
+                .to_zoned_datetime(TimeZone::system())
                 .unwrap()
                 .timestamp()
         };
