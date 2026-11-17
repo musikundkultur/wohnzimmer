@@ -11,7 +11,6 @@ on:
 
 concurrency:
   group: deploy
-  cancel-in-progress: true
 
 permissions: read-all
 
