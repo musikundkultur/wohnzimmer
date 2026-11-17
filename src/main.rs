@@ -15,8 +15,8 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use actix_web_prom::PrometheusMetricsBuilder;
 use core::future::{Ready, ready};
 use jiff::{Timestamp, ToSpan, ZonedDateTime};
-use minijinja::value::Value;
-use minijinja_autoreload::AutoReloader;
+use minijinja::Environment;
+use minijinja::value::{Serde, Value};
 #[cfg(target_os = "linux")]
 use prometheus::process_collector::ProcessCollector;
 use prometheus::{Encoder, Registry, TextEncoder};
@@ -26,14 +26,12 @@ use wohnzimmer::metrics::NAMESPACE;
 use wohnzimmer::{AppConfig, MetricsConfig};
 
 struct MiniJinjaRenderer {
-    tmpl_env: Data<AutoReloader>,
+    tmpl_env: Data<Environment<'static>>,
 }
 
 impl MiniJinjaRenderer {
     fn render(&self, tmpl: &str, ctx: impl Into<minijinja::value::Value>) -> Result<Html> {
         self.tmpl_env
-            .acquire_env()
-            .map_err(|_| ErrorInternalServerError("could not acquire template env"))?
             .get_template(tmpl)
             .map_err(|_| ErrorInternalServerError("could not find template"))?
             .render(ctx.into())
@@ -50,7 +48,9 @@ impl FromRequest for MiniJinjaRenderer {
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _pl: &mut dev::Payload) -> Self::Future {
-        let tmpl_env = <Data<AutoReloader>>::extract(req).into_inner().unwrap();
+        let tmpl_env = <Data<Environment<'static>>>::extract(req)
+            .into_inner()
+            .unwrap();
 
         ready(Ok(Self { tmpl_env }))
     }
@@ -79,9 +79,10 @@ async fn render_events(
         .into_iter()
         .map(|(year, evts)| {
             // Map events into StructObject values for rendering.
-            (year, evts.into_iter().map(Value::from_object).collect())
-        })
-        .collect::<indexmap::IndexMap<i16, Vec<Value>>>();
+            let evts: Vec<Value> = evts.into_iter().map(Value::from_object).collect();
+            (year, evts)
+        });
+    let events_by_year = Value::from_pairs(events_by_year);
 
     tmpl_env.render(
         tmpl,
@@ -179,24 +180,13 @@ async fn main() -> anyhow::Result<()> {
         log::info!("template auto-reloading is disabled");
     }
 
-    let mut env: minijinja::Environment<'static> = minijinja::Environment::new();
+    let mut env = Environment::new();
     env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
-    env.add_global("config", Value::from_serialize(&config));
+    env.add_global("config", Value::from(Serde(&config)));
     env.add_global("cache_buster", Timestamp::now().as_second());
-
-    // The closure is invoked every time the environment is outdated to recreate it.
-    let reloader = AutoReloader::new(move |notifier| {
-        let mut env = env.clone();
-
-        // if watch_path is never called, no fs watcher is created
-        if config.server.template_autoreload {
-            notifier.watch_path("./templates", true);
-        }
-
-        env.set_loader(minijinja::path_loader("./templates"));
-
-        Ok(env)
-    });
+    env.set_loader(minijinja::path_loader("./templates"));
+    // Templates are reloaded individually when they change on disk.
+    env.set_auto_reload(config.server.template_autoreload);
 
     let registry = Registry::new();
     let prometheus = PrometheusMetricsBuilder::new(NAMESPACE)
@@ -213,7 +203,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let calendar = Data::new(calendar);
-    let reloader = Data::new(reloader);
+    let tmpl_env = Data::new(env);
     let registry = Data::new(registry);
     let metrics_config = Data::new(config.metrics.clone());
 
@@ -223,7 +213,7 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .app_data(calendar.clone())
             .app_data(registry.clone())
-            .app_data(reloader.clone())
+            .app_data(tmpl_env.clone())
             .app_data(metrics_config.clone())
             .wrap(Condition::new(config.metrics.enabled, prometheus.clone()))
             .service(imprint)
